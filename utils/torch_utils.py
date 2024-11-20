@@ -1,23 +1,35 @@
 from IPython.core import debugger
 import torch
+import torch.nn as nn
 import os
 
-def norm_t(signal, dim=-1):
+C = 3e8
+
+def bin2tof(b, num_bins, tau):
+    '''
+        b == bin
+        num_bins == number of bins in histogram
+        tau == period
+    '''
+    return (b / num_bins) * tau
+
+def tof2depth(tof):
+    return tof * C / 2.
+
+def bin2depth(b, num_bins, tau):
+    return tof2depth(bin2tof(b, num_bins, tau))
+
+def norm_t(signal, dim=-2):
     mn = torch.mean(signal, dim=dim, keepdim=True)
     return signal - mn
 
-def zero_norm_t(signal, dim=-1):
+def zero_norm_t(signal, dim=-2):
     norm_sig = norm_t(signal, dim=dim)
     std = torch.std(signal, dim=dim, keepdim=True)
     return norm_sig / std
 
 
-def zncc(signal1, signal2, dims):
-    # Normalize images
-    sig1_norm_t = zero_norm_t(signal1)
-    sig2_norm_t = zero_norm_t(signal2)
-
-    # Calculate cross-correlation
-    corr = torch.nn.functional.conv2d(sig1_norm_t, sig2_norm_t.flip(dims=dims))
-
-    return corr
+def criterion_RMSE(est, gt):
+    criterion = nn.MSELoss()
+    # est should have grad
+    return torch.sqrt(criterion(est, gt))
