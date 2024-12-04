@@ -4,11 +4,12 @@ import torch.nn.init as init
 from utils.torch_utils import norm_t, zero_norm_t
 import numpy as np
 from utils.tirf_utils import get_coding_scheme
+from model_LIT_CODING import LITCodingModel
 from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class CorrelationMatrixLayer(nn.Module):
-    def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', h_irf=None, optimize_mat=False):
+    def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', h_irf=None, get_from_model=False):
         super(CorrelationMatrixLayer, self).__init__()
 
         self.n_tbins = n_tbins
@@ -17,8 +18,9 @@ class CorrelationMatrixLayer(nn.Module):
         self.h_irf = h_irf
 
 
-        if optimize_mat:
-            self.cmat_init = nn.Parameter(torch.randn(k, n_tbins), requires_grad=True)
+        if get_from_model:
+            model = LITCodingModel.load_from_checkpoint(init)
+            self.cmat_init = model.backbone_net.cmat1D.weight.data.detach().numpy().squeeze()
         else:
             cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=self.h_irf)
             self.cmat_init = cmat_init.transpose()
@@ -40,21 +42,18 @@ class CorrelationMatrixLayer(nn.Module):
         return c_vals
 
 class ZNCCLayer(nn.Module):
-    def __init__(self, corr_layer : CorrelationMatrixLayer):
+    def __init__(self):
         super(ZNCCLayer, self).__init__()
 
-        self.corr_layer = corr_layer
-        self.corr_mat = corr_layer.cmat1D.weight
         self.zero_norm_t = zero_norm_t
 
-    def forward(self, input_compressed):
+    def forward(self, input_compressed, cmat):
             # Normalize images
         input_norm_t = self.zero_norm_t(input_compressed, dim=-2)
-        corr_norm_t = self.zero_norm_t(self.corr_mat, dim=0)
+        corr_norm_t = self.zero_norm_t(cmat, dim=0)
 
         # Calculate cross-correlation
         zncc = torch.matmul(torch.transpose(input_norm_t, -2, -1), corr_norm_t.squeeze())
+        pred_depths = torch.argmax(torch.transpose(zncc, -2, -1), dim=-2).squeeze(-1)
 
-        return torch.transpose(zncc, -2, -1)
-
-
+        return pred_depths

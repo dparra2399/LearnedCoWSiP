@@ -9,6 +9,7 @@ import torch.utils.data
 from IRF_layers import Gaussian1DLayer, IRF1DLayer
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
 from utils.torch_utils import *
+import matplotlib.pyplot as plt
 
 
 
@@ -16,65 +17,72 @@ from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class SampleDataset(torch.utils.data.Dataset):
-    def __init__(self, nt, num_samples, photon_counts, sbr, tau, sigma=1, transform=None):
+    def __init__(self, nt, photon_counts, sbr, tau, num_samples=None, sigma=10, normalize=False):
 
-        self.num_samples = num_samples
         if type(photon_counts) == int:
-            photon_counts = torch.Tensor([photon_counts] * num_samples)
+            photon_counts = torch.Tensor([photon_counts])
         if type(sbr) == float:
-            sbr = torch.Tensor([sbr] * num_samples)
+            sbr = torch.Tensor([sbr])
 
-        assert type(photon_counts) == torch.Tensor and photon_counts.shape[-1] == num_samples
-        assert type(sbr) == torch.Tensor and sbr.shape[-1] == num_samples
+        assert type(photon_counts) == torch.Tensor
+        assert type(sbr) == torch.Tensor
 
         self.photon_counts = photon_counts
         self.sbr = sbr
         self.n_tbins = nt
         self.tau = tau
 
-        inputs2D = torch.rand((num_samples, 1), requires_grad=True)
+        if num_samples is None:
+            num_samples = 1
+        self.num_samples = int(num_samples)
 
-        # Eval Network Components
+        inputs1D = torch.linspace(0, self.n_tbins, self.num_samples) / self.n_tbins
+        inputs1D = inputs1D.view(inputs1D.shape[-1], -1)
         model = Gaussian1DLayer(gauss_len=nt)
-        outputs = model(inputs2D)
+        outputs = model(inputs1D)
 
-        pulse_domain = np.arange(0, nt)
+        pulse_domain = np.arange(0, self.n_tbins)
         pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
         irf_layer = IRF1DLayer(irf=pulse, conv_dim=0)
         outputs_irf_layer = irf_layer(outputs)
 
         scaled_tensors = []
-        for i in range(self.num_samples):
+        for i in range(self.photon_counts.shape[-1]):
             photon_count = self.photon_counts[i]
-            sbr = self.sbr[i]
-            amb_count = photon_count / sbr
-            slice = outputs_irf_layer[i, ...]
-            current_area = slice.sum(dim=-1, keepdim=True)
-            current_area = torch.where(current_area == 0, torch.ones_like(current_area), current_area)
-            amb_per_bin = amb_count / nt
-            scaling_factor = photon_count / current_area
-            scaled_tensor = slice * scaling_factor + amb_per_bin
-            scaled_tensors.append(scaled_tensor)
+            for j in range(self.sbr.shape[-1]):
+                sbr = self.sbr[j]
+                amb_count = photon_count / sbr
+                slice = outputs_irf_layer
+                current_area = slice.sum(dim=-1, keepdim=True)
+                current_area = torch.where(current_area == 0, torch.ones_like(current_area), current_area)
+                amb_per_bin = amb_count / nt
+                scaling_factor = photon_count / current_area
+                scaled_tensor = slice * scaling_factor + amb_per_bin
+                scaled_tensors.extend(scaled_tensor)
 
         self.simulated_data = torch.stack(scaled_tensors, dim=0).unsqueeze(-1)
-        self.noisy_data = torch.poisson(self.simulated_data).unsqueeze(-1)
-        self.transform = transform
-
+        self.noisy_data = torch.poisson(self.simulated_data)
+        self.normalize = normalize
+        if self.normalize:
+            num_samples = len(self)
+            mean_noisy = self.noisy_data.mean(dim=-2, keepdim=True)
+            std_noisy = self.noisy_data.std(dim=-2, keepdim=True)
+            self.noisy_data = (self.noisy_data - mean_noisy) / std_noisy
+            mean = self.simulated_data.mean(dim=-2, keepdim=True)
+            std = self.simulated_data.std(dim=-2, keepdim=True)
+            self.simulated_data = (self.simulated_data - mean) / std
 
     def __len__(self):
         # Returns the size of the dataset
-        return len(self.simulated_data)
+        return self.simulated_data.shape[0]
 
 
     def __getitem__(self, idx):
         # Load data and get label
-        noisy_sample = self.noisy_data[idx].squeeze(-1)
+        noisy_sample = self.noisy_data[idx]
         simulated_sample = self.simulated_data[idx]
         gt_depth = simulated_sample.argmax(dim=-2, keepdim=True).squeeze().float()
-        #gt_depth = bin2depth(gt_depth, num_bins=self.n_tbins, tau=self.tau)
         # Apply any transformations
-        if self.transform:
-            noisy_sample = self.transform(noisy_sample)
 
         return {
             'noisy_sample': noisy_sample,

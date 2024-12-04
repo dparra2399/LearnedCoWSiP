@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import logging
+
 import pytorch_lightning as pl
 from utils.torch_utils import *
-from CM1DLayers import ZNCCLayer
 from IPython.core import debugger
 breakpoint = debugger.set_trace
 
@@ -21,6 +22,7 @@ class LITBaseModel(pl.LightningModule):
         self.loss_id = loss_id
         self.k = k
         self.n_tbins = n_tbins
+        self.print_logger = logging.getLogger(__name__)
 
         self.backbone_net = backbone_net
         self.automatic_optimization = False
@@ -57,6 +59,11 @@ class LITBaseModel(pl.LightningModule):
         loss = self.compute_losses(sample, predicted_depth)
         loss.backward(retain_graph=True)
 
+        if (batch_idx % 1000 == 0):
+            self.log('train_loss', loss)
+            self.log('epoch', self.current_epoch)  # Log current epoch
+            self.log('batch', batch_idx)  # Log current batch index
+
         # Optionally, you can do manual optimizer step here
         optimizer = self.optimizers()
         optimizer.step()
@@ -69,7 +76,11 @@ class LITBaseModel(pl.LightningModule):
         # Compute Losses
         loss = self.compute_losses(sample, predicted_depth)
         # Important NOTE: Newer version of lightning accumulate the val_loss for each batch and then take the mean at the end of the epoch
-        self.log_dict({"loss/avg_val": loss})
+        if (batch_idx % 1000 == 0):
+            self.log_dict({"val_loss": loss})
+        # self.log('train_loss', loss)
+        # self.log('epoch', self.current_epoch)  # Log current epoch
+        # self.log('batch', batch_idx)  # Log current batch index
         # Return depths
         target_depth = sample['gt_depth']
         return {'depth': target_depth, 'depth_predict': predicted_depth}
