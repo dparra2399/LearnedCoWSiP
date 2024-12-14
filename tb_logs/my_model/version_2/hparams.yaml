@@ -1,0 +1,7 @@
+beta: 10
+init_lr: 0.001
+k: 4
+loss_id: rmse
+lr_decay_gamma: 0.9
+n_tbins: 1024
+tv_reg: 0.01

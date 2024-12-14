@@ -14,7 +14,8 @@ class LITBaseModel(pl.LightningModule):
                     k=3, n_tbins=1024,
                     init_lr = 1e-4,
 		            lr_decay_gamma = 0.9,
-		            loss_id = 'rmse',):
+		            loss_id = 'rmse',
+                    tv_reg = 0.1):
         super(LITBaseModel, self).__init__()
 
         self.init_lr = init_lr
@@ -22,6 +23,7 @@ class LITBaseModel(pl.LightningModule):
         self.loss_id = loss_id
         self.k = k
         self.n_tbins = n_tbins
+        self.tv_reg = tv_reg
         self.print_logger = logging.getLogger(__name__)
 
         self.backbone_net = backbone_net
@@ -52,14 +54,29 @@ class LITBaseModel(pl.LightningModule):
         loss = criterion_RMSE(predicted_depth, target_depth)
         return loss
 
+    def tv_regularization(self):
+
+        tv_loss = 0.0
+        weights = self.backbone_net.cmat1D.weight
+        # tv_out = torch.pow(weights[1:, :, :] - weights[:-1, :, :], 2)
+        # tv_loss += torch.sum(torch.sqrt(tv_out + 1e-6))
+
+        # TV across input channels
+        tv_in = torch.pow(weights[:, 1:, :] - weights[:, :-1, :], 2)
+        tv_loss += torch.sum(torch.sqrt(tv_in + 1e-6))
+        return tv_loss
+
+
     def training_step(self, sample, batch_idx):
         # Forward pass
         predicted_depth = self.forward_wrapper(sample)
         # Compute Losses
-        loss = self.compute_losses(sample, predicted_depth)
+        tv_loss = self.tv_regularization()
+
+        loss = self.compute_losses(sample, predicted_depth) + self.tv_reg * tv_loss
         loss.backward(retain_graph=True)
 
-        if (batch_idx % 1000 == 0):
+        if (batch_idx % 2000 == 0):
             self.log('train_loss', loss)
             self.log('epoch', self.current_epoch)  # Log current epoch
             self.log('batch', batch_idx)  # Log current batch index
@@ -74,9 +91,11 @@ class LITBaseModel(pl.LightningModule):
         # Forward pass
         predicted_depth = self.forward_wrapper(sample)
         # Compute Losses
-        loss = self.compute_losses(sample, predicted_depth)
+        tv_loss = self.tv_regularization()
+
+        loss = self.compute_losses(sample, predicted_depth) + self.tv_reg * tv_loss
         # Important NOTE: Newer version of lightning accumulate the val_loss for each batch and then take the mean at the end of the epoch
-        if (batch_idx % 1000 == 0):
+        if (batch_idx % 2000 == 0):
             self.log_dict({"val_loss": loss})
         # self.log('train_loss', loss)
         # self.log('epoch', self.current_epoch)  # Log current epoch

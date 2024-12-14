@@ -37,6 +37,7 @@ class CodingModel(nn.Module):
             result = torch.sum(softmaxed * indices, dim=dim)
             return result
 
+
         def forward(self, input_hist):
             output = self.cmat1D(input_hist)
             input_norm_t = self.zero_norm_t(output, dim=-2)
@@ -55,12 +56,14 @@ class LITCodingModel(LITBaseModel):
                     init_lr = 1e-4,
 		            lr_decay_gamma = 0.9,
 		            loss_id = 'rmse',
-                    beta=100):
+                    beta=100,
+                    tv_reg=0.1):
 
         base_model = CodingModel(k=k, n_tbins=n_tbins, beta=beta)
         super(LITCodingModel, self).__init__(base_model, k=k, n_tbins=n_tbins,
                                             init_lr = init_lr,
 		                                    lr_decay_gamma = lr_decay_gamma,
-		                                    loss_id = loss_id,)
+		                                    loss_id = loss_id,
+                                            tv_reg = tv_reg,)
         self.save_hyperparameters()
 

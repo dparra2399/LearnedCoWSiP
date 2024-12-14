@@ -1,12 +1,12 @@
 import logging
 import os
 
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-
 from dataset import SampleDataset
 from torch.utils.data import DataLoader
+import numpy as np
 
 import pytorch_lightning as pl
+from torch.utils.data import random_split
 
 
 class SimulatedDataModule(pl.LightningDataModule):
@@ -26,19 +26,27 @@ class SimulatedDataModule(pl.LightningDataModule):
         self.num_samples = num_samples
         self.train_val_split = train_val_split
 
+
     def setup(self, stage=None):
-        train_size = self.num_samples * self.train_val_split
-        val_size = self.num_samples * (1 - self.train_val_split)
-        self.train_dataset = SampleDataset(self.n_tbins, self.photon_counts, self.sbr,
-                                      num_samples=train_size, sigma=self.sigma, tau=self.tau, normalize=self.normalize)
-        self.val_dataset = SampleDataset(self.n_tbins, self.photon_counts, self.sbr,
-                                      num_samples=val_size, sigma=self.sigma, tau=self.tau, normalize=self.normalize)
+        dataset = SampleDataset(self.n_tbins, self.photon_counts, self.sbr,
+                                    num_samples=self.num_samples, sigma=self.sigma,
+                                    tau=self.tau, normalize=self.normalize)
+
+        num_samples = len(dataset)
+        train_size = int(np.floor(num_samples * self.train_val_split))
+        val_size = int(np.ceil(num_samples * (1 - self.train_val_split)))
+
+        self.train_dataset, self.val_dataset = random_split(dataset, [train_size, val_size])
+
 
     def train_dataloader(self):
-        train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4,
+                                      persistent_workers=True, shuffle=True)
         return train_dataloader
 
     def val_dataloader(self):
-        val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size)
+        val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=4,
+                                    persistent_workers=True)
         return val_dataloader
+
 

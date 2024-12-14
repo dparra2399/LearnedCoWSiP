@@ -20,7 +20,7 @@ class CorrelationMatrixLayer(nn.Module):
 
         if get_from_model:
             model = LITCodingModel.load_from_checkpoint(init)
-            self.cmat_init = model.backbone_net.cmat1D.weight.data.detach().numpy().squeeze()
+            self.cmat_init = model.backbone_net.cmat1D.weight.data.detach().cpu().numpy().squeeze()
         else:
             cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=self.h_irf)
             self.cmat_init = cmat_init.transpose()
