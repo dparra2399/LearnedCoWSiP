@@ -1,7 +1,7 @@
+batch_size: 24
 beta: 8
+epochs: 129
 init_lr: 0.0009145173790926249
-k: 4
-loss_id: rmse
 lr_decay_gamma: 0.37425082035224766
-n_tbins: 1024
+num_samples: 4700
 tv_reg: 0.09723338742824626

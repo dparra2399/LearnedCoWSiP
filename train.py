@@ -13,7 +13,6 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 import matplotlib
 import yaml
-matplotlib.use('TkAgg')
 
 if_plot = True
 rep_freq = 5 * 1e6
@@ -22,8 +21,8 @@ num_samples = 1024
 batch_size = 64
 sigma = 10
 
-counts = torch.linspace(10 ** 2, 10 ** 6, 10)
-sbr = torch.linspace(0.1, 10.0, 10)
+counts = torch.linspace(10 ** 3, 10 ** 3, 10)
+sbr = torch.linspace(0.1, 0.1, 10)
 #
 init_lr = 0.001
 lr_decay_gamma = 0.9
@@ -33,7 +32,7 @@ k = 4
 epochs = 100
 beta = 10
 
-yaml_file = 'best_hyperparameters_2.yaml'
+yaml_file = 'best_hyperparameters_3.yaml'
 
 if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(
@@ -73,7 +72,7 @@ if __name__ == '__main__':
     logger = CSVLogger("tb_logs", name="my_model")
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.50,
+                          log_every_n_steps=250, val_check_interval=0.25,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITCodingModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
