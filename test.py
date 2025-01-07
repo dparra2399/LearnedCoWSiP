@@ -1,22 +1,12 @@
-import logging
-
-import os
-
-import pytorch_lightning as pl
-
 import numpy as np
-import torch
-from utils.torch_utils import bin2depth
 from CM1DLayers import CorrelationMatrixLayer, ZNCCLayer
 from dataset import SampleDataset
-from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
 from utils.torch_utils import *
-
 
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
-
+#
 if_plot = True
 
 rep_freq = 5 * 1e6
@@ -24,16 +14,17 @@ rep_tau = 1. / rep_freq
 sigma = 10
 # counts = torch.linspace(10 ** 2, 10 ** 6, 20)
 # sbr = torch.linspace(0.05, 10.0, 20)
-counts = torch.Tensor([10 ** 6] * 10)
-sbr = torch.Tensor([1.0] * 10)
+counts = torch.Tensor([10 ** 3] * 10)
+sbr = torch.Tensor([0.1] * 10)
 n_tbins = 1024
 k = 4
 
 
 #init = 'checkpoints/good_checkpoints/coded_model-v9.ckpt'
-inits = ['TruncatedFourier', 'checkpoints/coded_model-v4.ckpt']
+inits = ['checkpoints/good_checkpoints/coded_model-v4.ckpt', 'checkpoints/good_checkpoints/coded_model-v4.ckpt',
+         'checkpoints/coded_model.ckpt']
 
-sample_data = SampleDataset(n_tbins, counts, sbr, num_samples=15, tau=rep_tau, sigma=sigma)
+sample_data = SampleDataset(n_tbins, counts, sbr, num_samples=1024, tau=rep_tau, sigma=sigma)
 num_samples = len(sample_data)
 sample = sample_data.noisy_data
 
@@ -45,6 +36,7 @@ if if_plot:
     axs[0].plot(sample.__getitem__(np.random.randint(0, num_samples)), label='Noisy Pulse')
     axs[0].set_title('Sample Measured Histogram')
 counter = 1
+labels = []
 for init in inits:
     if init.endswith('.ckpt'): get_from_model = True
     else: get_from_model = False
@@ -60,13 +52,13 @@ for init in inits:
     loss = torch.mean(torch.abs(pred_depths.squeeze() - gt_depths.squeeze()))
     #loss = criterion_RMSE(pred_depths, gt_depths)
 
-    print(f'MAE Learned: {loss * 1000:.3f} mm ')
-
+    print(f'MAE {init.split('/')[-1].split('.')[0]}: {loss * 1000:.3f} mm ')
+    labels.append(init.split('/')[-1].split('.')[0])
     if if_plot:
         cmat = coding_mat.cmat1D.weight
         cmat = np.transpose(cmat.detach().numpy().squeeze())
         axs[counter].plot(cmat)
-        axs[counter].set_title(init)
+        #axs[counter].set_title(init.split('/')[-1].split('.')[0])
 
         axs[-1].bar(counter-1, loss, label=f'{loss * 1000:.2f}mm')
         axs[-1].set_title('MAE (Lower Better)')
@@ -74,7 +66,7 @@ for init in inits:
     counter += 1
 
 axs[-1].set_xticks(np.arange(0, len(inits)))
-axs[-1].set_xticklabels(inits)
+axs[-1].set_xticklabels(labels)
 axs[-1].legend()
 
 plt.show(block=True)

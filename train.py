@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 import matplotlib
 import yaml
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 if_plot = True
 rep_freq = 5 * 1e6
@@ -33,7 +33,7 @@ k = 4
 epochs = 100
 beta = 10
 
-yaml_file = 'best_hyperparameters_2.yaml'
+yaml_file = 'best_hyperparameters_200.yaml'
 
 if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(
