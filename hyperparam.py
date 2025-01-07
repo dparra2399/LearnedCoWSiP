@@ -14,8 +14,8 @@ rep_tau = 1. / rep_freq
 #batch_size = 64
 sigma = 10
 
-counts = torch.linspace(10 ** 5, 10 ** 5, 5)
-sbr = torch.linspace(10.0, 10.0, 5)
+#counts = torch.linspace(10 ** 5, 10 ** 5, 5)
+#sbr = torch.linspace(10.0, 10.0, 5)
 
 #init_lr = 0.0001
 #lr_decay_gamma = 0.9
@@ -36,7 +36,12 @@ def objective(trial):
     epochs = trial.suggest_int("epochs", 10, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 512, 5000)
+    num_samples = trial.suggest_int("num_samples", 512, 10000)
+    num_counts = trial.suggest_int('counts' , 1, 30)
+    
+    counts = torch.linspace(10 ** 2, 10 ** 6, num_counts)
+    sbr = torch.linspace(0.1, 10.0, num_counts)
+
 
     data_module = SimulatedDataModule(n_tbins, counts, sbr, rep_tau, batch_size, num_samples=num_samples, sigma=sigma,
                                       normalize=True)
@@ -46,12 +51,24 @@ def objective(trial):
                                beta=beta, tv_reg=tv_reg)
 
     # PyTorch Lightning Trainer with Optuna Pruning
-    trainer = pl.Trainer(
-        max_epochs=epochs,
-        logger=False,  # Disable logging to reduce clutter
-        enable_checkpointing=False,  # Disable checkpointing for simplicity
-        callbacks=[OptunaPruning(trial, monitor="val_loss")],
-    )
+    if torch.cuda.is_available():
+        trainer = pl.Trainer(
+            devices=[0],
+            accelerator='gpu',
+            val_check_interval=0.25,
+            max_epochs=epochs,
+            logger=False,
+            enable_checkpointing=False,
+            callbacks=[OptunaPruning(trial, monitor="val_loss")],
+        )
+    else:
+        trainer = pl.Trainer(
+            max_epochs=epochs,
+            val_check_interval=0.25,
+            logger=False,
+            enable_checkpointing=False,
+            callbacks=[OptunaPruning(trial, monitor="val_loss")],
+        )
 
     # Train the model
     trainer.fit(lit_model, train_dataloaders=data_module.train_dataloader(), val_dataloaders=data_module.val_dataloader())
@@ -68,12 +85,13 @@ if __name__ == "__main__":
     else:
         device = torch.device("cpu")
 
+
     study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=200)
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open('best_hyperparameters_2.yaml', 'w+') as f:
+    with open('best_hyperparameters_4.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)
 
     # {'init_lr': 0.0009145173790926249, 'lr_decay_gamma': 0.37425082035224766, 'batch_size': 24, 'epochs': 129, 'tv_reg': 0.09723338742824626, 'beta': 8, 'num_samples': 4661}
