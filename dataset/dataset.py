@@ -1,23 +1,32 @@
 #### Standard Library Imports
-import os
-from glob import glob
 
 #### Library imports
 import numpy as np
-import torch
 import torch.utils.data
-from IRF_layers import Gaussian1DLayer, IRF1DLayer
+from models.IRF_layers import Gaussian1DLayer, IRF1DLayer
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
 from utils.torch_utils import *
-import matplotlib.pyplot as plt
-
-
 
 from IPython.core import debugger
 breakpoint = debugger.set_trace
 
+class SampleLabels(torch.utils.data.Dataset):
+    def __init__(self, nt, num_samples=10):
+        self.nt = nt
+        self.num_samples = num_samples
+        self.labels = torch.linspace(0, self.nt, self.num_samples).to(torch.int)
+        #self.labels = self.labels.view(self.labels.shape[-1], -1)
+
+    def __len__(self):
+        # Returns the size of the dataset
+        return self.labels.shape[0]
+
+    def __getitem__(self, idx):
+        label = self.labels[idx]
+        return label
+
 class SampleDataset(torch.utils.data.Dataset):
-    def __init__(self, nt, photon_counts, sbr, tau, num_samples=None, sigma=10, normalize=False):
+    def __init__(self, nt, photon_counts, sbr, num_samples=None, sigma=10, normalize=False):
 
         if type(photon_counts) == int:
             photon_counts = torch.Tensor([photon_counts])
@@ -30,7 +39,6 @@ class SampleDataset(torch.utils.data.Dataset):
         self.photon_counts = photon_counts
         self.sbr = sbr
         self.n_tbins = nt
-        self.tau = tau
 
         if num_samples is None:
             num_samples = 1

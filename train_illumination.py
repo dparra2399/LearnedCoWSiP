@@ -1,31 +1,21 @@
-from models.model_LIT_CODING import LITCodingModel
+from models.model_LIT_CODING import LITIlluminationModel
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger
-from dataset.dataset_utils import SimulatedDataModule
+from dataset.dataset_utils import SimulatedLabelModule
 import torch
 import pytorch_lightning as pl
 
 import yaml
 
-if_plot = True
-rep_freq = 5 * 1e6
-rep_tau = 1. / rep_freq
-num_samples = 1024
-batch_size = 64
-sigma = 10
+photon_count = 10 ** 3
+sbr = 1.0
 
-counts = torch.linspace(10 ** 4, 10 ** 4, 10)
-sbr = torch.linspace(5.0, 5.0, 10)
-#
-init_lr = 0.001
-lr_decay_gamma = 0.9
-tv_reg = 0.01
 n_tbins = 1024
 k = 4
-epochs = 100
-beta = 10
+sigma = 10
 
-yaml_file = 'config/best_hyperparameters_3.yaml'
+yaml_file = 'config/best_hyperparameters_4.yaml'
+
 
 if __name__ == '__main__':
     checkpoint_callback = ModelCheckpoint(
@@ -48,10 +38,11 @@ if __name__ == '__main__':
         beta = config['beta']
         num_samples = config['num_samples']
     except (FileNotFoundError, TypeError) as e:
-        pass
+        print(e)
+        exit(0)
 
-    data_module = SimulatedDataModule(n_tbins, counts, sbr, batch_size, num_samples=num_samples, sigma=sigma, normalize=True)
-    data_module.setup()
+    label_module = SimulatedLabelModule(n_tbins, batch_size=batch_size, num_samples=num_samples)
+    label_module.setup()
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
@@ -68,8 +59,9 @@ if __name__ == '__main__':
                           log_every_n_steps=250, val_check_interval=0.25,
                           callbacks=[checkpoint_callback])
 
-    lit_model = LITCodingModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg)
+    lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
+                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr)
+
     torch.autograd.set_detect_anomaly(True)
 
-    trainer.fit(lit_model, datamodule=data_module)
+    trainer.fit(lit_model, datamodule=label_module)

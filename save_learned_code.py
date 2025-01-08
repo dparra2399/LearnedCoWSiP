@@ -1,5 +1,5 @@
 import numpy as np
-from CM1DLayers import CorrelationMatrixLayer
+from models.CM1DLayers import CorrelationMatrixLayer
 
 init = 'checkpoints/good_checkpoints/coded_model-tmp.ckpt'
 

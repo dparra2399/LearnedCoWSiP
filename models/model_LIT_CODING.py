@@ -4,7 +4,7 @@ import torch.nn.init as init
 import numpy as np
 from utils.torch_utils import norm_t, zero_norm_t
 from IPython.core import debugger
-from model_LIT_BASE import LITBaseModel
+from models.model_LIT_BASE import LITCodingBaseModel, LITIlluminationBaseModel
 breakpoint = debugger.set_trace
 
 class CodingModel(nn.Module):
@@ -51,7 +51,63 @@ class CodingModel(nn.Module):
             return pred_depths
 
 
-class LITCodingModel(LITBaseModel):
+class IlluminationModel(nn.Module):
+
+    def __init__(self, k=3, n_tbins=1024, beta=100, photon_count=1e3, sbr=0.1):
+        super(IlluminationModel, self).__init__()
+
+        self.n_tbins = n_tbins
+        self.photon_count = photon_count
+        self.sbr = sbr
+
+        self.learnable_input = nn.Parameter(torch.rand(self.n_tbins, 1), requires_grad=True)
+
+        for param in self.parameters():
+            param.requires_grad = False
+
+        self.learnable_input.requires_grad = True
+
+        self.coding_model = CodingModel(k=k, n_tbins=n_tbins, beta=beta)
+
+    def forward(self, bins):
+        current_area = self.learnable_input.sum(dim=0, keepdim=True)
+        current_area = torch.where(current_area == 0, torch.ones_like(current_area), current_area)
+        amb_count = self.photon_count / self.sbr
+
+        amb_per_bin = amb_count / self.n_tbins
+        scaling_factor = self.photon_count / current_area
+
+        scaled_input = self.learnable_input * scaling_factor + amb_per_bin
+
+        shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in bins],
+                                    dim=0)
+
+        noisy_input = torch.poisson(shifted_input)
+
+        return self.coding_model(noisy_input)
+
+
+
+class LITIlluminationModel(LITIlluminationBaseModel):
+    def __init__(self, k=4, n_tbins=1024,
+                    init_lr = 1e-4,
+		            lr_decay_gamma = 0.9,
+		            loss_id = 'rmse',
+                    beta=100,
+                    tv_reg=0.1,
+                    photon_count=1e3,
+                    sbr=0.1):
+
+        base_model = IlluminationModel(k=k, n_tbins=n_tbins, beta=beta, photon_count=photon_count, sbr=sbr)
+        super(LITIlluminationModel, self).__init__(base_model, k=k, n_tbins=n_tbins,
+                                            init_lr = init_lr,
+		                                    lr_decay_gamma = lr_decay_gamma,
+		                                    loss_id = loss_id,
+                                            tv_reg = tv_reg,)
+        self.save_hyperparameters()
+
+
+class LITCodingModel(LITCodingBaseModel):
     def __init__(self, k=3, n_tbins=1024,
                     init_lr = 1e-4,
 		            lr_decay_gamma = 0.9,
@@ -66,4 +122,6 @@ class LITCodingModel(LITBaseModel):
 		                                    loss_id = loss_id,
                                             tv_reg = tv_reg,)
         self.save_hyperparameters()
+
+
 

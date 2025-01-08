@@ -5,8 +5,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from IPython.core import debugger
 breakpoint = debugger.set_trace
+from models.model_LIT_CODING import LITIlluminationModel
 
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
+
 
 
 class Gaussian1DLayer(nn.Module):

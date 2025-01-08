@@ -1,6 +1,6 @@
 import numpy as np
-from CM1DLayers import CorrelationMatrixLayer, ZNCCLayer
-from dataset import SampleDataset
+from models.CM1DLayers import CodingLayer, ZNCCLayer
+from dataset.dataset import SampleDataset
 from utils.torch_utils import *
 
 import matplotlib.pyplot as plt
@@ -40,7 +40,7 @@ labels = []
 for init in inits:
     if init.endswith('.ckpt'): get_from_model = True
     else: get_from_model = False
-    coding_mat = CorrelationMatrixLayer(k=k, n_tbins=n_tbins, init=init, get_from_model=get_from_model)
+    coding_mat = CodingLayer(k=k, n_tbins=n_tbins, init=init, get_from_model=get_from_model)
     zncc_layer = ZNCCLayer()
 
     c_vals = coding_mat(sample)

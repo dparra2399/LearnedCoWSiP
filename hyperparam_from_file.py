@@ -1,8 +1,7 @@
 import optuna
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
-from utils.model_utils import SimulatedDataModule
-from pytorch_lightning.loggers import CSVLogger
-from model_LIT_CODING import LITCodingModel
+from dataset.dataset_utils import SimulatedDataModule
+from models.model_LIT_CODING import LITCodingModel
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -14,8 +13,8 @@ sigma = 10
 n_tbins = 1024
 k = 4
 
-storage = "sqlite:///optuna_studies/study_1.db"
-start_file = 'best_hyperparameters_3.yaml'
+storage = "sqlite:///optuna_studies/study_001.db"
+start_file = 'config/best_hyperparameters_3.yaml'
 
 class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
     def __init__(self, *args, **kwargs):
@@ -90,7 +89,7 @@ if __name__ == "__main__":
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open('best_hyperparameters_4.yaml', 'w+') as f:
+    with open('config/best_hyperparameters_4.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)
 
     # {'init_lr': 0.0009145173790926249, 'lr_decay_gamma': 0.37425082035224766, 'batch_size': 24, 'epochs': 129, 'tv_reg': 0.09723338742824626, 'beta': 8, 'num_samples': 4661}

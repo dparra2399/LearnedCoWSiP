@@ -1,8 +1,7 @@
 import optuna
 from optuna.integration.pytorch_lightning import PyTorchLightningPruningCallback
-from utils.model_utils import SimulatedDataModule
-from pytorch_lightning.loggers import CSVLogger
-from model_LIT_CODING import LITCodingModel
+from dataset.dataset_utils import SimulatedDataModule
+from models.model_LIT_CODING import LITCodingModel
 import pytorch_lightning as pl
 import torch
 import yaml
@@ -91,7 +90,7 @@ if __name__ == "__main__":
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open('best_hyperparameters_4.yaml', 'w+') as f:
+    with open('config/best_hyperparameters_4.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)
 
     # {'init_lr': 0.0009145173790926249, 'lr_decay_gamma': 0.37425082035224766, 'batch_size': 24, 'epochs': 129, 'tv_reg': 0.09723338742824626, 'beta': 8, 'num_samples': 4661}
