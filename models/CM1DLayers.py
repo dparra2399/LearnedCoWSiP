@@ -44,8 +44,10 @@ class IlluminationLayer(nn.Module):
         shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in labels],
                                     dim=0)
 
-        
-        c_vals = self.cmat1D(shifted_input)
+        #shifted_input[shifted_input < 0] = 0
+        noisy_input = torch.poisson(shifted_input)
+
+        c_vals = self.cmat1D(noisy_input)
         return c_vals
 
 class CodingLayer(nn.Module):

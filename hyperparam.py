@@ -6,23 +6,12 @@ import pytorch_lightning as pl
 import torch
 import yaml
 
-if_plot = True
-rep_freq = 5 * 1e6
-rep_tau = 1. / rep_freq
-#num_samples = 1024
-#batch_size = 64
 sigma = 10
-
-#counts = torch.linspace(10 ** 5, 10 ** 5, 5)
-#sbr = torch.linspace(10.0, 10.0, 5)
-
-#init_lr = 0.0001
-#lr_decay_gamma = 0.9
-#tv_reg = 0.9
 n_tbins = 1024
 k = 4
-#epochs = 20
-#beta = 10
+
+storage = "sqlite:///optuna_studies/study_002.db"
+start_file = 'config/best_hyperparameters_3.yaml'
 
 class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
     def __init__(self, *args, **kwargs):
@@ -32,17 +21,17 @@ def objective(trial):
     init_lr = trial.suggest_float("init_lr", 1e-5, 1e-1, log=True)
     lr_decay_gamma = trial.suggest_float("lr_decay_gamma", 1e-1, 1, log=True)
     batch_size = trial.suggest_int("batch_size", 16, 128)
-    epochs = trial.suggest_int("epochs", 10, 200)
+    epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 512, 10000)
-    num_counts = trial.suggest_int('counts' , 1, 30)
+    num_samples = trial.suggest_int("num_samples", 4000, 10000)
+    #num_counts = trial.suggest_int('counts' , 1, 30)
     
-    counts = torch.linspace(10 ** 2, 10 ** 6, num_counts)
-    sbr = torch.linspace(0.1, 10.0, num_counts)
+    counts = torch.linspace(10 ** 3, 10 ** 3, 10)
+    sbr = torch.linspace(0.1, 0.1, 10)
 
 
-    data_module = SimulatedDataModule(n_tbins, counts, sbr, rep_tau, batch_size, num_samples=num_samples, sigma=sigma,
+    data_module = SimulatedDataModule(n_tbins, counts, sbr, batch_size, num_samples=num_samples, sigma=sigma,
                                       normalize=True)
     data_module.setup()
 
@@ -85,12 +74,19 @@ if __name__ == "__main__":
         device = torch.device("cpu")
 
 
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(study_name='my_study', storage=storage, load_if_exists=True,
+                                direction="minimize")
+
+    with open(start_file, "r") as file:
+        config = yaml.safe_load(file)
+
+    study.enqueue_trial(config)  # Pre-tuned values
+
     study.optimize(objective, n_trials=200)
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open('config/best_hyperparameters_4.yaml', 'w+') as f:
+    with open('config/best_hyperparameters_5.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)
 
     # {'init_lr': 0.0009145173790926249, 'lr_decay_gamma': 0.37425082035224766, 'batch_size': 24, 'epochs': 129, 'tv_reg': 0.09723338742824626, 'beta': 8, 'num_samples': 4661}

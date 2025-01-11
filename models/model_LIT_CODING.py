@@ -5,6 +5,7 @@ import numpy as np
 from utils.torch_utils import norm_t, zero_norm_t
 from IPython.core import debugger
 from models.model_LIT_BASE import LITCodingBaseModel, LITIlluminationBaseModel
+import torch.nn.init as init
 breakpoint = debugger.set_trace
 
 class CodingModel(nn.Module):
@@ -25,7 +26,7 @@ class CodingModel(nn.Module):
             for param in self.cmat1D.parameters():
                 param.requires_grad = True
 
-
+            init.xavier_uniform_(self.cmat1D.weight)
             self.zero_norm_t = zero_norm_t
             self.beta = beta
 
@@ -53,7 +54,7 @@ class CodingModel(nn.Module):
 
 class IlluminationModel(nn.Module):
 
-    def __init__(self, k=3, n_tbins=1024, beta=100, photon_count=1e3, sbr=0.1):
+    def __init__(self, k=3, n_tbins=1024, beta=100, photon_count=1e3, sbr=0.1, normalize=False):
         super(IlluminationModel, self).__init__()
 
         self.n_tbins = n_tbins
@@ -66,6 +67,7 @@ class IlluminationModel(nn.Module):
             param.requires_grad = False
 
         self.learnable_input.requires_grad = True
+        self.learnable_input.data.fill_(1.0) 
 
         self.coding_model = CodingModel(k=k, n_tbins=n_tbins, beta=beta)
 
@@ -82,9 +84,18 @@ class IlluminationModel(nn.Module):
         shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in bins],
                                     dim=0)
 
-        noisy_input = torch.poisson(shifted_input)
+        input_min = shifted_input.min(dim=0, keepdim=True)[0]
+        input_max = shifted_input.max(dim=0, keepdim=True)[0]
 
-        return self.coding_model(noisy_input)
+        epilson = 1e-8
+        normal_shifted_input = (shifted_input - input_min) / (input_max - input_min + epilson)
+        normal_shifted_input = torch.where((input_max - input_min) < epilson, torch.zeros_like(normal_shifted_input), normal_shifted_input)
+
+        #print("normal_shifted_input:", normal_shifted_input)
+
+        #noisy_input = torch.poisson(normal_shifted_input)
+
+        return self.coding_model(normal_shifted_input)
 
 
 
@@ -95,6 +106,7 @@ class LITIlluminationModel(LITIlluminationBaseModel):
 		            loss_id = 'rmse',
                     beta=100,
                     tv_reg=0.1,
+                    tv_reg_illum=0.1,
                     photon_count=1e3,
                     sbr=0.1):
 
@@ -103,7 +115,8 @@ class LITIlluminationModel(LITIlluminationBaseModel):
                                             init_lr = init_lr,
 		                                    lr_decay_gamma = lr_decay_gamma,
 		                                    loss_id = loss_id,
-                                            tv_reg = tv_reg,)
+                                            tv_reg = tv_reg,
+                                            tv_reg_illum=tv_reg_illum,)
         self.save_hyperparameters()
 
 

@@ -14,7 +14,7 @@ n_tbins = 1024
 k = 4
 sigma = 10
 
-yaml_file = 'config/best_hyperparameters_4.yaml'
+yaml_file = 'config/best_hyperparameters_tmp.yaml'
 
 
 if __name__ == '__main__':
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     logger = CSVLogger("tb_logs", name="my_model")
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.25,
+                          log_every_n_steps=250, val_check_interval=0.5,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,

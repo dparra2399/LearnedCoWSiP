@@ -1,7 +1,7 @@
 batch_size: 24
-beta: 10
+beta: 8
 epochs: 100
-init_lr: 0.001
-lr_decay_gamma: 0.9
-num_samples: 8348
+init_lr: 0.0009145173790926249
+lr_decay_gamma: 0.37425082035224766
+num_samples: 40000
 tv_reg: 0.0006059199766079745
