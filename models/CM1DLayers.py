@@ -39,7 +39,7 @@ class IlluminationLayer(nn.Module):
         amb_per_bin = amb_count / self.n_tbins
         scaling_factor = photon_count / current_area
 
-        scaled_input = self.illumination * scaling_factor + amb_per_bin
+        scaled_input = (self.illumination + 2.0) * scaling_factor + amb_per_bin
 
         shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in labels],
                                     dim=0)

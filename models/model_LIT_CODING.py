@@ -60,6 +60,7 @@ class IlluminationModel(nn.Module):
         self.n_tbins = n_tbins
         self.photon_count = photon_count
         self.sbr = sbr
+        self.epilson = 1e-8
 
         self.learnable_input = nn.Parameter(torch.rand(self.n_tbins, 1), requires_grad=True)
 
@@ -84,18 +85,19 @@ class IlluminationModel(nn.Module):
         shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in bins],
                                     dim=0)
 
-        input_min = shifted_input.min(dim=0, keepdim=True)[0]
-        input_max = shifted_input.max(dim=0, keepdim=True)[0]
+        #input_min = shifted_input.min(dim=0, keepdim=True)[0]
+        #input_max = shifted_input.max(dim=0, keepdim=True)[0]
 
-        epilson = 1e-8
-        normal_shifted_input = (shifted_input - input_min) / (input_max - input_min + epilson)
-        normal_shifted_input = torch.where((input_max - input_min) < epilson, torch.zeros_like(normal_shifted_input), normal_shifted_input)
+        #normal_shifted_input = (shifted_input - input_min) / (input_max - input_min + self.epilson)
+        #normal_shifted_input = torch.where((input_max - input_min) < self.epilson, torch.full_like(normal_shifted_input, self.epilson), normal_shifted_input)
 
-        #print("normal_shifted_input:", normal_shifted_input)
+        #normal_shifted_input = (shifted_input - shifted_input.mean(dim=0, keepdim=True)) / (shifted_input.std(dim=0, keepdim=True) + self.epilsonepilson)
 
-        #noisy_input = torch.poisson(normal_shifted_input)
+        #normal_shifted_input = torch.relu(shifted_input)
 
-        return self.coding_model(normal_shifted_input)
+        noisy_input = torch.poisson(shifted_input)
+
+        return self.coding_model(noisy_input)
 
 
 
@@ -106,7 +108,6 @@ class LITIlluminationModel(LITIlluminationBaseModel):
 		            loss_id = 'rmse',
                     beta=100,
                     tv_reg=0.1,
-                    tv_reg_illum=0.1,
                     photon_count=1e3,
                     sbr=0.1):
 
@@ -115,8 +116,7 @@ class LITIlluminationModel(LITIlluminationBaseModel):
                                             init_lr = init_lr,
 		                                    lr_decay_gamma = lr_decay_gamma,
 		                                    loss_id = loss_id,
-                                            tv_reg = tv_reg,
-                                            tv_reg_illum=tv_reg_illum,)
+                                            tv_reg = tv_reg,)
         self.save_hyperparameters()
 
 

@@ -112,7 +112,6 @@ class LITIlluminationBaseModel(pl.LightningModule):
 		            lr_decay_gamma = 0.9,
 		            loss_id = 'rmse',
                     tv_reg = 0.1,
-                    tv_reg_illum = 0.1,
                     photon_count=1e3,
                     sbr=0.1):
         super(LITIlluminationBaseModel, self).__init__()
@@ -123,7 +122,6 @@ class LITIlluminationBaseModel(pl.LightningModule):
         self.k = k
         self.n_tbins = n_tbins
         self.tv_reg = tv_reg
-        self.tv_reg_illum = tv_reg_illum
         self.print_logger = logging.getLogger(__name__)
         self.photon_count = photon_count
         self.sbr = sbr
@@ -138,17 +136,6 @@ class LITIlluminationBaseModel(pl.LightningModule):
 
         # TV across input channels
         tv_in = torch.pow(weights[:, 1:, :] - weights[:, :-1, :], 2)
-        tv_loss += torch.sum(torch.sqrt(tv_in + 1e-6))
-        return tv_loss
-    
-    def tv__illum_regularization(self):
-        tv_loss = 0.0
-        weights = self.backbone_net.learnable_input
-        # tv_out = torch.pow(weights[1:, :, :] - weights[:-1, :, :], 2)
-        # tv_loss += torch.sum(torch.sqrt(tv_out + 1e-6))
-
-        # TV across input channels
-        tv_in = torch.pow(weights[1:, :] - weights[:-1, :], 2)
         tv_loss += torch.sum(torch.sqrt(tv_in + 1e-6))
         return tv_loss
     
@@ -168,14 +155,10 @@ class LITIlluminationBaseModel(pl.LightningModule):
         return reconstruction
 
     def training_step(self, sample, batch_idx):
-        # Forward pass
         predicted_depth = self.forward_wrapper(sample)
-        # Compute Losses
         tv_loss = self.tv_regularization()
-        tv_illum_loss = self.tv__illum_regularization()
 
-        loss = self.compute_losses(sample, predicted_depth).to(torch.float32)+ self.tv_reg * tv_loss + self.tv_reg_illum * tv_illum_loss
-        loss.backward(retain_graph=True)
+        loss = self.compute_losses(sample, predicted_depth).to(torch.float32) + self.tv_reg * tv_loss
 
         if (batch_idx % 2000 == 0):
             self.log('train_loss', loss)
@@ -183,8 +166,12 @@ class LITIlluminationBaseModel(pl.LightningModule):
             self.log('batch', batch_idx)  # Log current batch index
 
         optimizer = self.optimizers()
-        optimizer.step()
         optimizer.zero_grad()
+        loss.backward(retain_graph=True)
+        
+        torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+
+        optimizer.step()
         return loss
 
     def validation_step(self, sample, batch_idx):
@@ -192,9 +179,8 @@ class LITIlluminationBaseModel(pl.LightningModule):
         predicted_depth = self.forward_wrapper(sample)
         # Compute Losses
         tv_loss = self.tv_regularization()
-        tv_illum_loss = self.tv__illum_regularization()
 
-        loss = self.compute_losses(sample, predicted_depth).to(torch.float32)+ self.tv_reg * tv_loss + self.tv_reg_illum * tv_illum_loss
+        loss = self.compute_losses(sample, predicted_depth).to(torch.float32) + self.tv_reg * tv_loss
         # Important NOTE: Newer version of lightning accumulate the val_loss for each batch and then take the mean at the end of the epoch
         if (batch_idx % 2000 == 0):
             self.log_dict({"val_loss": loss})
