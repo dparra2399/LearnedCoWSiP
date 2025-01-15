@@ -6,24 +6,21 @@ from utils.torch_utils import *
 
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('TkAgg')
-#
 if_plot = True
 
 rep_freq = 5 * 1e6
 rep_tau = 1. / rep_freq
-sigma = 10
+sigma = 30
 # counts = torch.linspace(10 ** 2, 10 ** 6, 20)
 # sbr = torch.linspace(0.05, 10.0, 20)
 
-photon_count = 10**3
+photon_count = 10**2
 sbr = 1.0
-n_tbins = 1024
+n_tbins = 100
 k = 4
 
 
-#init = 'checkpoints/good_checkpoints/coded_model-v9.ckpt'
-inits = ['TruncatedFourier', 'checkpoints/coded_model.ckpt']
+inits = ['TruncatedFourier', 'checkpoints/coded_model-v5.ckpt']
 
 sample_data = SampleLabels(n_tbins, num_samples=1024)
 num_samples = len(sample_data)
