@@ -1,0 +1,10 @@
+beta: 41
+init_lr: 0.00036193472562082017
+k: 4
+loss_id: rmse
+lr_decay_gamma: 0.7403580207206537
+n_tbins: 1024
+photon_count: 1000
+sbr: 1.0
+sigma: 30
+tv_reg: 0.00312470677753916

@@ -8,13 +8,13 @@ import yaml
 
 
 sigma = 10
-n_tbins = 1024
+n_tbins = 200
 k = 4
 
-photon_count = 10 ** 3
+photon_count = 200
 sbr = 1.0
 
-storage = "sqlite:///optuna_studies/study_illumination_002.db"
+storage = "sqlite:///optuna_studies/study_illumination_003.db"
 start_file = 'config/best_hyperparameters_tmp.yaml'
 #start_file = None
 
@@ -28,7 +28,6 @@ def objective(trial):
     batch_size = trial.suggest_int("batch_size", 16, 128)
     epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
-    tv_reg_illum = trial.suggest_float("tv_reg_illum", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
     num_samples = trial.suggest_int("num_samples", 40000, 400000)
     
@@ -38,7 +37,7 @@ def objective(trial):
     label_module.setup()
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, tv_reg_illum=tv_reg_illum, photon_count=photon_count, sbr=sbr)
+                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)
 
     # PyTorch Lightning Trainer with Optuna Pruning
     if torch.cuda.is_available():
@@ -85,7 +84,7 @@ if __name__ == "__main__":
             config = yaml.safe_load(file)
         study.enqueue_trial(config)  # Pre-tuned values
 
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=200)
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)

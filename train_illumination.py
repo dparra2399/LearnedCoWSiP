@@ -12,7 +12,7 @@ sbr = 1.0
 
 n_tbins = 1024
 k = 4
-sigma = 10
+sigma = 30
 
 yaml_file = 'config/best_hyperparameters_tmp.yaml'
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr)
+                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)
 
     torch.autograd.set_detect_anomaly(True)
 

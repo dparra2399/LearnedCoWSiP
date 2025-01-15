@@ -3,5 +3,5 @@ beta: 41
 epochs: 77
 init_lr: 0.00036193472562082017
 lr_decay_gamma: 0.7403580207206537
-num_samples: 84330
+num_samples: 16433
 tv_reg: 0.00312470677753916
