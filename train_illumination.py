@@ -1,5 +1,5 @@
 from models.model_LIT_CODING import LITIlluminationModel
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import CSVLogger
 from dataset.dataset_utils import SimulatedLabelModule
 import torch
@@ -15,7 +15,7 @@ n_tbins = 200
 k = 4
 sigma = 10
 
-yaml_file = 'config/best_hyperparameters_tmp2.yaml'
+yaml_file = 'config/best_hyperparameters_illumination_v1.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
@@ -28,6 +28,13 @@ if __name__ == '__main__':
         save_top_k=1,  # Save only the best model
         monitor="val_loss",  # Metric to monitor
         mode="min",  # Minimize the monitored metric
+    )
+
+    early_stopping = EarlyStopping(
+        monitor='val_loss',        # or any metric you want to track
+        min_delta=0.0,             # threshold to trigger stop (use a larger value if you want to be stricter)
+        patience=20,               # number of epochs with no improvement before stopping
+        mode='min',                # 'min' means we stop when the loss increases
     )
 
     try:
@@ -59,7 +66,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
                           log_every_n_steps=250, val_check_interval=0.5,
-                          callbacks=[checkpoint_callback])
+                          callbacks=[checkpoint_callback, early_stopping])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
                                beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)

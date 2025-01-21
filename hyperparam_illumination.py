@@ -7,15 +7,15 @@ import torch
 import yaml
 
 
-sigma = 10
-n_tbins = 200
+sigma = 30
+n_tbins = 1024
 k = 4
 
-photon_count = 200
+photon_count = 1000
 sbr = 1.0
 
-storage = "sqlite:///optuna_studies/study_illumination_004.db"
-start_file = 'config/best_hyperparameters_tmp.yaml'
+storage = "sqlite:///optuna_studies/study_illumination_005.db"
+start_file = 'config/best_hyperparameters_illumination_v1.yaml'
 #start_file = None
 
 class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
@@ -29,7 +29,7 @@ def objective(trial):
     epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 4000, 40000)
+    num_samples = trial.suggest_int("num_samples", 40000, 400000)
     
 
 
@@ -88,5 +88,5 @@ if __name__ == "__main__":
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open('config/best_hyperparameters_illumination_v1.yaml', 'w+') as f:
+    with open('config/best_hyperparameters_illumination_v2.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)
