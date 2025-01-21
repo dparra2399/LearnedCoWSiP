@@ -14,7 +14,7 @@ k = 4
 photon_count = 200
 sbr = 1.0
 
-storage = "sqlite:///optuna_studies/study_illumination_003.db"
+storage = "sqlite:///optuna_studies/study_illumination_004.db"
 start_file = 'config/best_hyperparameters_tmp.yaml'
 #start_file = None
 
@@ -25,11 +25,11 @@ class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
 def objective(trial):
     init_lr = trial.suggest_float("init_lr", 1e-5, 1e-1, log=True)
     lr_decay_gamma = trial.suggest_float("lr_decay_gamma", 1e-1, 1, log=True)
-    batch_size = trial.suggest_int("batch_size", 16, 128)
+    batch_size = trial.suggest_int("batch_size", 8, 128)
     epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 40000, 400000)
+    num_samples = trial.suggest_int("num_samples", 4000, 40000)
     
 
 

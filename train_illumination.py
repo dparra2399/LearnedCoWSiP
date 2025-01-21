@@ -4,23 +4,27 @@ from pytorch_lightning.loggers import CSVLogger
 from dataset.dataset_utils import SimulatedLabelModule
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-photon_count = 10 ** 3
+photon_count = 200
 sbr = 1.0
 
-n_tbins = 1024
+n_tbins = 200
 k = 4
-sigma = 30
+sigma = 10
 
-yaml_file = 'config/best_hyperparameters_tmp.yaml'
-
+yaml_file = 'config/best_hyperparameters_tmp2.yaml'
+log_dir = 'experiments'
 
 if __name__ == '__main__':
+
+    logger = TensorBoardLogger(log_dir, name="illum_models")
+
     checkpoint_callback = ModelCheckpoint(
-        dirpath="checkpoints",  # Directory to save the model
-        filename="coded_model",  # Base name for the checkpoint files
+        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
+        filename ='coded_model',
         save_top_k=1,  # Save only the best model
         monitor="val_loss",  # Metric to monitor
         mode="min",  # Minimize the monitored metric
@@ -52,8 +56,6 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     pl.seed_everything(42)
-
-    logger = CSVLogger("tb_logs", name="my_model")
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
                           log_every_n_steps=250, val_check_interval=0.5,
