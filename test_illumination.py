@@ -10,19 +10,19 @@ if_plot = True
 
 rep_freq = 5 * 1e6
 rep_tau = 1. / rep_freq
-sigma = 30
+sigma = 10
 # counts = torch.linspace(10 ** 2, 10 ** 6, 20)
 # sbr = torch.linspace(0.05, 10.0, 20)
 
-photon_count = 10**2
+photon_count = 200
 sbr = 1.0
-n_tbins = 100
+n_tbins = 200
 k = 4
 
 
-inits = ['TruncatedFourier', 'checkpoints/coded_model-v5.ckpt']
+inits = ['TruncatedFourier', 'experiments/illum_models/version_5/checkpoints/coded_model.ckpt']
 
-sample_data = SampleLabels(n_tbins, num_samples=1024)
+sample_data = SampleLabels(n_tbins, num_samples=5000)
 num_samples = len(sample_data)
 labels = sample_data.labels
 

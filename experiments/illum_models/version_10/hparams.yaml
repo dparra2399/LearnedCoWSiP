@@ -1,8 +1,10 @@
-batch_size: 13
 beta: 45
-epochs: 102
 init_lr: 0.050226343864103115
+k: 4
+loss_id: crossentropy
 lr_decay_gamma: 0.16375838881528834
-num_samples: 2000
+n_tbins: 200
+photon_count: 200
+sbr: 1.0
+sigma: 10
 tv_reg: 0.0011869485344305597
-loss_id: 'rmse'

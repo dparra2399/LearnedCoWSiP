@@ -1,40 +1,37 @@
 from models.model_LIT_CODING import LITCodingModel
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 from dataset.dataset_utils import SimulatedDataModule
 import torch
 import pytorch_lightning as pl
 
 import yaml
 
-if_plot = True
 rep_freq = 5 * 1e6
 rep_tau = 1. / rep_freq
-num_samples = 1024
-batch_size = 64
-sigma = 10
-
-counts = torch.linspace(10 ** 4, 10 ** 4, 10)
-sbr = torch.linspace(5.0, 5.0, 10)
-#
-init_lr = 0.001
-lr_decay_gamma = 0.9
-tv_reg = 0.01
 n_tbins = 1024
-k = 4
-epochs = 100
-beta = 10
+k=4
+sigma = 20
+
+counts = torch.linspace(10 ** 2, 10 ** 4, 10)
+sbr = torch.linspace(0.1, 5.0, 10)
+
 
 yaml_file = 'config/best_hyperparameters_3.yaml'
+log_dir = 'experiments'
+
 
 if __name__ == '__main__':
+    logger = TensorBoardLogger(log_dir, name="code_models")
+
     checkpoint_callback = ModelCheckpoint(
-        dirpath="checkpoints",  # Directory to save the model
-        filename="coded_model",  # Base name for the checkpoint files
+        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
+        filename ='coded_model',
         save_top_k=1,  # Save only the best model
         monitor="val_loss",  # Metric to monitor
         mode="min",  # Minimize the monitored metric
     )
+
 
     try:
         with open(yaml_file, 'r') as file:
@@ -61,8 +58,6 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     pl.seed_everything(42)
-
-    logger = CSVLogger("tb_logs", name="my_model")
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
                           log_every_n_steps=250, val_check_interval=0.25,

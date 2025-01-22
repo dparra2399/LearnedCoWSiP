@@ -36,24 +36,22 @@ class IlluminationLayer(nn.Module):
         pulse_domain = np.arange(0, self.n_tbins)
         pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
         self.irf_layer = IRF1DLayer(irf=pulse)
-
-        self.illumination = self.irf_layer(self.illumination).view(self.n_tbins, 1)
-
+        
     def forward(self, labels, photon_count, sbr):
 
-
-        current_area = self.illumination.sum(dim=0, keepdim=True)
+        input = torch.relu(self.illumination)
+        irf_output = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
+        current_area = irf_output.sum(dim=0, keepdim=True)
         amb_count = photon_count / sbr
 
         amb_per_bin = amb_count / self.n_tbins
         scaling_factor = photon_count / current_area
 
-        scaled_input = self.illumination * scaling_factor + amb_per_bin
+        scaled_input = irf_output * scaling_factor + amb_per_bin
 
         shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in labels],
                                     dim=0)
 
-        shifted_input = torch.relu(shifted_input)
         noisy_input = torch.poisson(shifted_input)
 
         c_vals = self.cmat1D(noisy_input)

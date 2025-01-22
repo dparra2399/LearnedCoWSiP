@@ -11,10 +11,22 @@ from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class SampleLabels(torch.utils.data.Dataset):
-    def __init__(self, nt, num_samples=10):
+    def __init__(self, nt, photon_counts, sbrs, num_samples=10):
         self.nt = nt
         self.num_samples = num_samples
-        self.labels = torch.linspace(0, self.nt, self.num_samples).to(torch.int)
+        labels = torch.linspace(3, self.nt-3, self.num_samples).to(torch.int)
+        
+        labeled_tensors = []
+        for i in range(photon_counts.shape[-1]):
+            photon_count = photon_counts[i]
+            for j in range(sbrs.shape[-1]):
+                sbr = sbrs[j]
+                for k in range(labels.shape[-1]):
+                    label = labels[k]
+                    tup = (label, photon_count, sbr)
+                    labeled_tensors.append(tup)
+                
+        self.labels = torch.tensor(labeled_tensors)
         #self.labels = self.labels.view(self.labels.shape[-1], -1)
 
     def __len__(self):
@@ -22,8 +34,11 @@ class SampleLabels(torch.utils.data.Dataset):
         return self.labels.shape[0]
 
     def __getitem__(self, idx):
-        label = self.labels[idx]
-        return label
+        sample = self.labels[idx]
+        label = sample[0]
+        photon_count = sample[1]
+        sbr = sample[2]
+        return {'depth': label, 'photon_count': photon_count, 'sbr': sbr}
 
 class SampleDataset(torch.utils.data.Dataset):
     def __init__(self, nt, photon_counts, sbr, num_samples=None, sigma=10, normalize=False):
@@ -44,7 +59,7 @@ class SampleDataset(torch.utils.data.Dataset):
             num_samples = 1
         self.num_samples = int(num_samples)
 
-        inputs1D = torch.linspace(0, self.n_tbins, self.num_samples) / self.n_tbins
+        inputs1D = torch.linspace(3, self.n_tbins-3, self.num_samples) / self.n_tbins
         inputs1D = inputs1D.view(inputs1D.shape[-1], -1)
         model = Gaussian1DLayer(gauss_len=nt)
         outputs = model(inputs1D)
