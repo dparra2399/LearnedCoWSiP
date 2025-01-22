@@ -7,11 +7,11 @@ import torch
 import yaml
 
 
-sigma = 30
-n_tbins = 1024
+sigma = 10
+n_tbins = 200
 k = 4
 
-photon_count = 1000
+photon_count = 200
 sbr = 1.0
 
 storage = "sqlite:///optuna_studies/study_illumination_005.db"
@@ -29,22 +29,22 @@ def objective(trial):
     epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 40000, 400000)
+    num_samples = trial.suggest_int("num_samples", 4000, 40000)
     
 
 
     label_module = SimulatedLabelModule(n_tbins, batch_size=batch_size, num_samples=num_samples)
     label_module.setup()
 
-    lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
+    lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id='rmse', init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
                                beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)
 
     # PyTorch Lightning Trainer with Optuna Pruning
     if torch.cuda.is_available():
         trainer = pl.Trainer(
-            devices=[0],
+            devices=[0, 1],
             accelerator='gpu',
-            val_check_interval=0.5,
+            val_check_interval=0.2,
             max_epochs=epochs,
             logger=False,
             enable_checkpointing=False,
@@ -53,7 +53,7 @@ def objective(trial):
     else:
         trainer = pl.Trainer(
             max_epochs=epochs,
-            val_check_interval=0.5,
+            val_check_interval=0.2,
             logger=False,
             enable_checkpointing=False,
             callbacks=[OptunaPruning(trial, monitor="val_loss")],
