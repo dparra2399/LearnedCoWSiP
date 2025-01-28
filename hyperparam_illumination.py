@@ -11,10 +11,11 @@ sigma = 10
 n_tbins = 200
 k = 4
 
-photon_count = 200
-sbr = 1.0
+counts = torch.linspace(50, 1000, 10)
+sbrs = torch.linspace(0.1, 10.0, 10)
 
 storage = "sqlite:///optuna_studies/study_illumination_005.db"
+loss_id = 'rmse'
 start_file = 'config/best_hyperparameters_illumination_v1.yaml'
 #start_file = None
 
@@ -29,15 +30,16 @@ def objective(trial):
     epochs = trial.suggest_int("epochs", 50, 200)
     tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
     beta = trial.suggest_int("beta", 1, 100)
-    num_samples = trial.suggest_int("num_samples", 4000, 40000)
+    num_samples = trial.suggest_int("num_samples", 40, 400)
     
 
 
-    label_module = SimulatedLabelModule(n_tbins, batch_size=batch_size, num_samples=num_samples)
+    label_module = SimulatedLabelModule(n_tbins, photon_counts=counts, sbrs=sbrs, batch_size=batch_size,
+                                        num_samples=num_samples)
     label_module.setup()
 
-    lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id='rmse', init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)
+    lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
+                               beta=beta, tv_reg=tv_reg, sigma=sigma)
 
     # PyTorch Lightning Trainer with Optuna Pruning
     if torch.cuda.is_available():

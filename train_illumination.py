@@ -8,15 +8,20 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-photon_count = 200
+photon_count = 1024
 sbr = 1.0
 
-n_tbins = 200
+n_tbins = 1024
 k = 4
-sigma = 10
+sigma = 30
 
+#counts = torch.linspace(50, 1000, 10)
+#sbrs = torch.linspace(0.1, 5.0, 10)
 
-yaml_file = 'config/best_hyperparameters_illumination_v1.yaml'
+counts = torch.linspace(10 ** 2, 10 ** 4, 10)
+sbrs = torch.linspace(0.1, 5.0, 10)
+
+yaml_file = 'config/best_hyperparameters_3.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
@@ -47,8 +52,11 @@ if __name__ == '__main__':
         print(e)
         exit(0)
 
-    label_module = SimulatedLabelModule(n_tbins, batch_size=batch_size, num_samples=num_samples)
+    label_module = SimulatedLabelModule(n_tbins, photon_counts=counts, sbrs=sbrs, batch_size=batch_size,
+                                        num_samples=num_samples)
     label_module.setup()
+
+    print(len(label_module.train_dataset))
 
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
@@ -60,11 +68,11 @@ if __name__ == '__main__':
     pl.seed_everything(42)
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.2,
+                          log_every_n_steps=250, val_check_interval=0.5,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, photon_count=photon_count, sbr=sbr, sigma=sigma)
+                               beta=beta, tv_reg=tv_reg, sigma=sigma)
 
     torch.autograd.set_detect_anomaly(True)
 

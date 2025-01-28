@@ -37,25 +37,25 @@ class IlluminationLayer(nn.Module):
         pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
         self.irf_layer = IRF1DLayer(irf=pulse)
         
-    def forward(self, labels, photon_count, sbr):
+    def forward(self, bins, photon_counts, sbrs):
 
         input = torch.relu(self.illumination)
-        irf_output = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
-        current_area = irf_output.sum(dim=0, keepdim=True)
-        amb_count = photon_count / sbr
+        irf_input = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
 
-        amb_per_bin = amb_count / self.n_tbins
-        scaling_factor = photon_count / current_area
+        amb_counts = photon_counts / sbrs  # (batch_size,)
+        amb_per_bin = amb_counts / self.n_tbins  # (batch_size,)
 
-        scaled_input = irf_output * scaling_factor + amb_per_bin
+        current_area = irf_input.sum(dim=0, keepdim=True)  # (n_tbins, 1)
+        scaling_factors = photon_counts.view(-1, 1) / current_area  # (batch_size, 1, 1)
 
-        shifted_input = torch.stack([torch.roll(scaled_input, shifts=int(shift), dims=0) for shift in labels],
-                                    dim=0)
+        shifts = bins.long() % self.n_tbins  # Ensure shifts are valid integers
+        shifted_tensors = torch.stack([torch.roll(irf_input, shifts=int(shift), dims=0) for i, shift in enumerate(shifts)], dim=0)  # (batch_size, n_tbins, 1)
 
-        noisy_input = torch.poisson(shifted_input)
+        scaled_tensors = shifted_tensors * scaling_factors.view(-1, 1, 1) + amb_per_bin.view(-1, 1, 1)  # (batch_size, n_tbins, 1)
+        
+        noisy_input = torch.poisson(scaled_tensors)
 
-        c_vals = self.cmat1D(noisy_input)
-        return c_vals
+        return self.cmat1D(noisy_input)
 
 class CodingLayer(nn.Module):
     def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', h_irf=None, get_from_model=False):

@@ -59,7 +59,7 @@ class SampleDataset(torch.utils.data.Dataset):
             num_samples = 1
         self.num_samples = int(num_samples)
 
-        inputs1D = torch.linspace(3, self.n_tbins-3, self.num_samples) / self.n_tbins
+        inputs1D = torch.linspace(0, self.n_tbins, self.num_samples) / self.n_tbins
         inputs1D = inputs1D.view(inputs1D.shape[-1], -1)
         model = Gaussian1DLayer(gauss_len=nt)
         outputs = model(inputs1D)

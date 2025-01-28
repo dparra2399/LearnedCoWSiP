@@ -5,7 +5,6 @@ from utils.torch_utils import *
 
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('TkAgg')
 #
 if_plot = True
 
@@ -15,16 +14,15 @@ sigma = 10
 # counts = torch.linspace(10 ** 2, 10 ** 6, 20)
 # sbr = torch.linspace(0.05, 10.0, 20)
 counts = torch.Tensor([10 ** 3] * 10)
-sbr = torch.Tensor([0.1] * 10)
+sbr = torch.Tensor([1.0] * 10)
 n_tbins = 1024
 k = 4
 
 
 #init = 'checkpoints/good_checkpoints/coded_model-v9.ckpt'
-inits = ['checkpoints/good_checkpoints/coded_model-v4.ckpt', 'checkpoints/good_checkpoints/coded_model-v4.ckpt',
-         'checkpoints/coded_model.ckpt']
+inits = ['TruncatedFourier', 'experiments/code_models/version_0/checkpoints/coded_model.ckpt']
 
-sample_data = SampleDataset(n_tbins, counts, sbr, num_samples=1024, tau=rep_tau, sigma=sigma)
+sample_data = SampleDataset(n_tbins, counts, sbr, num_samples=1024, sigma=sigma)
 num_samples = len(sample_data)
 sample = sample_data.noisy_data
 
