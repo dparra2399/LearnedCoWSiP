@@ -10,11 +10,12 @@ import yaml
 rep_freq = 5 * 1e6
 rep_tau = 1. / rep_freq
 n_tbins = 1024
+.00000
 k=4
-sigma = 20
+sigma = 30
 
-counts = torch.linspace(10 ** 2, 10 ** 4, 10)
-sbr = torch.linspace(0.1, 5.0, 10)
+counts = torch.linspace(10 ** 2, 10 ** 6, 10)
+sbr = torch.linspace(0.1, 10.0, 10)
 
 
 yaml_file = 'config/best_hyperparameters_3.yaml'
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     pl.seed_everything(42)
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.25,
+                          log_every_n_steps=250, val_check_interval=0.5,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITCodingModel(k=k, n_tbins=n_tbins, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,

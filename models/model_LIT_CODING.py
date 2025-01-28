@@ -44,7 +44,7 @@ class CodingModel(nn.Module):
         def forward(self, input_hist):
             output = self.cmat1D(input_hist)
             input_norm_t = self.zero_norm_t(output, dim=-2)
-            corr_norm_t = self.zero_norm_t(self.cmat1D.weight.data, dim=0)
+            corr_norm_t = self.zero_norm_t(self.cmat1D.weight, dim=0)
 
             zncc = torch.matmul(torch.transpose(input_norm_t, -2, -1), corr_norm_t.squeeze())
             zncc = torch.transpose(zncc, -2, -1)
@@ -78,30 +78,26 @@ class IlluminationModel(nn.Module):
     def forward(self, bins, photon_counts, sbrs):
 
         input = torch.relu(self.learnable_input)
-        scaled_tensors = []
-        for i in range(bins.shape[-1]):
-            photon_count = photon_counts[i]
-            sbr = sbrs[i]
-            shift = bins[i]
-            amb_count = photon_count / sbr
-            slice = input
-            current_area = slice.sum(dim=-1, keepdim=True)
-            current_area = torch.where(current_area == 0, torch.ones_like(current_area), current_area)
-            amb_per_bin = amb_count / self.n_tbins
-            scaling_factor = photon_count / current_area
-            scaled_tensor = slice * scaling_factor + amb_per_bin
-            scaled_tensors.extend(torch.roll(scaled_tensor, shifts=int(shift), dims=0))
+        irf_input = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
 
-        shifted_input = torch.stack(scaled_tensors, dim=0).unsqueeze(-1)
+        amb_counts = photon_counts / sbrs  # (batch_size,)
+        amb_per_bin = amb_counts / self.n_tbins  # (batch_size,)
 
-        noise = torch.normal(mean=0, std=torch.sqrt(shifted_input)).to(shifted_input.device)
-        noisy_parameter = shifted_input + noise
+        current_area = irf_input.sum(dim=0, keepdim=True)  # (n_tbins, 1)
+        scaling_factors = photon_counts.view(-1, 1) / current_area  # (batch_size, 1, 1)
 
-        input_min = noisy_parameter.min(dim=0, keepdim=True)[0]
-        input_max = noisy_parameter.max(dim=0, keepdim=True)[0]
-        normal_input = (noisy_parameter - input_min) / (input_max - input_min + self.epilson)
-        #normal_shifted_input = torch.where((input_max - input_min) < self.epilson, torch.full_like(normal_shifted_input, self.epilson), normal_shifted_input)
-        return self.coding_model(normal_input)
+        shifts = bins.long() % self.n_tbins  # Ensure shifts are valid integers
+        shifted_tensors = torch.stack([torch.roll(irf_input, shifts=int(shift), dims=0) for i, shift in enumerate(shifts)], dim=0)  # (batch_size, n_tbins, 1)
+
+        scaled_tensors = shifted_tensors * scaling_factors.view(-1, 1, 1) + amb_per_bin.view(-1, 1, 1)  # (batch_size, n_tbins, 1)
+
+        noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
+        noisy_parameter = scaled_tensors + noise
+
+        #input_min = noisy_parameter.min(dim=1, keepdim=True)[0]
+        #input_max = noisy_parameter.max(dim=1, keepdim=True)[0]
+        #normal_input = (noisy_parameter - input_min) / (input_max - input_min + self.epilson)
+        return self.coding_model(noisy_parameter)
 
 
 

@@ -127,8 +127,8 @@ class LITIlluminationBaseModel(pl.LightningModule):
         tv_loss += torch.sum(torch.sqrt(tv_in + 1e-6))
         return tv_loss
     
-    def compute_losses(self, laebl, reconstruction, predicted_depth):
-        target_depth = laebl.to(torch.float32)
+    def compute_losses(self, sample, reconstruction, predicted_depth):
+        target_depth = sample['depth'].to(torch.float32)
 
         if self.loss_id == 'rmse':
             loss = criterion_RMSE(predicted_depth, target_depth)
