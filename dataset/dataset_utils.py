@@ -50,7 +50,7 @@ class SimulatedDataModule(pl.LightningDataModule):
 
 
 class SimulatedLabelModule(pl.LightningDataModule):
-    def __init__(self, nt, photon_counts, sbrs, batch_size=8,
+    def __init__(self, nt, sources, sbrs, batch_size=8,
                  num_samples=None, train_val_split: float = 0.8):
 
         super().__init__()
@@ -60,12 +60,12 @@ class SimulatedLabelModule(pl.LightningDataModule):
             num_samples = self.n_tbins
         self.num_samples = num_samples
         self.train_val_split = train_val_split
-        self.photon_counts = photon_counts
+        self.sources = sources
         self.sbrs = sbrs
 
 
     def setup(self, stage=None):
-        dataset = SampleLabels(self.n_tbins, self.photon_counts, self.sbrs, num_samples=self.num_samples)
+        dataset = SampleLabels(self.n_tbins, self.sources, self.sbrs, num_samples=self.num_samples)
 
         num_samples = len(dataset)
         train_size = int(np.floor(num_samples * self.train_val_split))

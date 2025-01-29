@@ -1,3 +1,5 @@
+from lightning.pytorch.loggers import CSVLogger
+
 from models.model_LIT_CODING import LITCodingModel
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -10,7 +12,6 @@ import yaml
 rep_freq = 5 * 1e6
 rep_tau = 1. / rep_freq
 n_tbins = 1024
-.00000
 k=4
 sigma = 30
 
@@ -23,7 +24,7 @@ log_dir = 'experiments'
 
 
 if __name__ == '__main__':
-    logger = TensorBoardLogger(log_dir, name="code_models")
+    logger = CSVLogger(log_dir, name="code_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  

@@ -5,6 +5,16 @@ import os
 
 C = 3e8
 
+
+class CharbonnierLoss(nn.Module):
+    def __init__(self, epsilon=1e-3):
+        super(CharbonnierLoss, self).__init__()
+        self.epsilon = epsilon
+
+    def forward(self, pred, gt):
+        return torch.mean(torch.sqrt((pred - gt) ** 2 + self.epsilon ** 2))
+
+
 def bin2tof(b, num_bins, tau):
     '''
         b == bin
@@ -36,4 +46,8 @@ def criterion_RMSE(est, gt):
 
 def criterion_MAE(est, gt):
     criterion = nn.L1Loss()
+    return criterion(est, gt)
+
+def criterion_CHARBONNIER(est, gt):
+    criterion = CharbonnierLoss()
     return criterion(est, gt)

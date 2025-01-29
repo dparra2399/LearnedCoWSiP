@@ -11,19 +11,19 @@ from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class SampleLabels(torch.utils.data.Dataset):
-    def __init__(self, nt, photon_counts, sbrs, num_samples=10):
+    def __init__(self, nt, sources, sbrs, num_samples=10):
         self.nt = nt
         self.num_samples = num_samples
         labels = torch.linspace(3, self.nt-3, self.num_samples).to(torch.int)
         
         labeled_tensors = []
-        for i in range(photon_counts.shape[-1]):
-            photon_count = photon_counts[i]
+        for i in range(sources.shape[-1]):
+            source = sources[i]
             for j in range(sbrs.shape[-1]):
                 sbr = sbrs[j]
                 for k in range(labels.shape[-1]):
                     label = labels[k]
-                    tup = (label, photon_count, sbr)
+                    tup = (label, source, sbr)
                     labeled_tensors.append(tup)
                 
         self.labels = torch.tensor(labeled_tensors)
@@ -36,9 +36,9 @@ class SampleLabels(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         sample = self.labels[idx]
         label = sample[0]
-        photon_count = sample[1]
+        source = sample[1]
         sbr = sample[2]
-        return {'depth': label, 'photon_count': photon_count, 'sbr': sbr}
+        return {'depth': label, 'source': source, 'background': sbr}
 
 class SampleDataset(torch.utils.data.Dataset):
     def __init__(self, nt, photon_counts, sbr, num_samples=None, sigma=10, normalize=False):

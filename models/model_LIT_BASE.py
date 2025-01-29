@@ -136,20 +136,22 @@ class LITIlluminationBaseModel(pl.LightningModule):
             loss = nn.CrossEntropyLoss(reconstruction, target_depth)
         elif self.loss_id == 'mae':
             loss = criterion_MAE(predicted_depth, target_depth)
+        elif self.loss_id == 'charbonnier':
+            loss = criterion_CHARBONNIER(predicted_depth, target_depth)
         else:
             loss = criterion_RMSE(predicted_depth, target_depth)
         return loss
 
-    def forward(self, depth, photon_count, sbr):
+    def forward(self, depth, source, background):
         # use forward for inference/predictions
-        recon, p_depth = self.backbone_net(depth, photon_count, sbr)
+        recon, p_depth = self.backbone_net(depth, source, background)
         return recon, p_depth
 
     def forward_wrapper(self, sample):
         depth = sample['depth']
-        photon_count = sample['photon_count']
-        sbr = sample['sbr']
-        recon, p_depth = self(depth, photon_count, sbr)
+        source = sample['source']
+        background = sample['background']
+        recon, p_depth = self(depth, source, background)
         return  recon, p_depth
 
     def training_step(self, sample, batch_idx):

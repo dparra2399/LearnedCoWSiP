@@ -100,6 +100,47 @@ class IlluminationModel(nn.Module):
         return self.coding_model(noisy_parameter)
 
 
+class IlluminationPeakModel(nn.Module):
+
+    def __init__(self, k=3, n_tbins=1024, beta=100,  sigma=10, normalize=False):
+        super(IlluminationPeakModel, self).__init__()
+
+        self.n_tbins = n_tbins
+        self.epilson = 1e-8
+
+        self.learnable_input = nn.Parameter(torch.rand(self.n_tbins, 1), requires_grad=True)
+
+        for param in self.parameters():
+            param.requires_grad = False
+
+        self.learnable_input.requires_grad = True
+        self.learnable_input.data.fill_(1.0)
+
+        self.coding_model = CodingModel(k=k, n_tbins=n_tbins, beta=beta)
+        pulse_domain = np.arange(0, self.n_tbins)
+        pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+        self.irf_layer = IRF1DLayer(irf=pulse)
+
+    def forward(self, bins, peak_counts, ambient_counts):
+
+        input = torch.relu(self.learnable_input)
+        irf_input = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
+
+        current_peak = torch.logsumexp(irf_input, dim=0, keepdim=True) # (n_tbins, 1)
+
+        shifts = bins.long() % self.n_tbins  # Ensure shifts are valid integers
+        shifted_tensors = torch.stack([torch.roll(irf_input, shifts=int(shift), dims=0) for i, shift in enumerate(shifts)], dim=0)  # (batch_size, n_tbins, 1)
+
+        scaled_tensors = ((shifted_tensors / current_peak) * peak_counts.view(-1, 1, 1)) + ambient_counts.view(-1, 1, 1)  # (batch_size, n_tbins, 1)
+
+        noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
+        noisy_parameter = scaled_tensors + noise
+
+        #input_min = noisy_parameter.min(dim=1, keepdim=True)[0]
+        #input_max = noisy_parameter.max(dim=1, keepdim=True)[0]
+        #normal_input = (noisy_parameter - input_min) / (input_max - input_min + self.epilson)
+        return self.coding_model(noisy_parameter)
+
 
 class LITIlluminationModel(LITIlluminationBaseModel):
     def __init__(self, k=4, n_tbins=1024,
@@ -112,6 +153,24 @@ class LITIlluminationModel(LITIlluminationBaseModel):
 
         base_model = IlluminationModel(k=k, n_tbins=n_tbins, beta=beta, sigma=sigma)
         super(LITIlluminationModel, self).__init__(base_model, k=k, n_tbins=n_tbins,
+                                            init_lr = init_lr,
+		                                    lr_decay_gamma = lr_decay_gamma,
+		                                    loss_id = loss_id,
+                                            tv_reg = tv_reg,)
+        self.save_hyperparameters()
+
+
+class LITIlluminationPeakModel(LITIlluminationBaseModel):
+    def __init__(self, k=4, n_tbins=1024,
+                    init_lr = 1e-4,
+		            lr_decay_gamma = 0.9,
+		            loss_id = 'rmse',
+                    beta=100,
+                    tv_reg=0.1,
+                    sigma=10):
+
+        base_model = IlluminationModel(k=k, n_tbins=n_tbins, beta=beta, sigma=sigma)
+        super(LITIlluminationPeakModel, self).__init__(base_model, k=k, n_tbins=n_tbins,
                                             init_lr = init_lr,
 		                                    lr_decay_gamma = lr_decay_gamma,
 		                                    loss_id = loss_id,

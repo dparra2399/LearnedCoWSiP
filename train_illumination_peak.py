@@ -5,21 +5,15 @@ from dataset.dataset_utils import SimulatedLabelModule
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
-
 import yaml
-
-photon_count = 1024
-sbr = 1.0
 
 n_tbins = 1024
 k = 4
 sigma = 30
 
-#counts = torch.linspace(50, 1000, 10)
-#sbrs = torch.linspace(0.1, 5.0, 10)
 
-counts = torch.linspace(10 ** 2, 10 ** 4, 10)
-sbrs = torch.linspace(0.1, 5.0, 10)
+peaks = torch.linspace(10, 200, 10)
+ambients = torch.linspace(1, 20, 10)
 
 yaml_file = 'config/best_hyperparameters_3.yaml'
 log_dir = 'experiments'
@@ -29,7 +23,7 @@ if __name__ == '__main__':
     logger = CSVLogger(log_dir, name="illum_models")
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
+        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",
         filename ='coded_model',
         save_top_k=1,  # Save only the best model
         monitor="val_loss",  # Metric to monitor
@@ -52,7 +46,7 @@ if __name__ == '__main__':
         print(e)
         exit(0)
 
-    label_module = SimulatedLabelModule(n_tbins, sources=counts, sbrs=sbrs, batch_size=batch_size,
+    label_module = SimulatedLabelModule(n_tbins, sources=peaks, sbrs=ambients, batch_size=batch_size,
                                         num_samples=num_samples)
     label_module.setup()
 
