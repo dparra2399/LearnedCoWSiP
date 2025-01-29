@@ -134,6 +134,8 @@ class LITIlluminationBaseModel(pl.LightningModule):
             loss = criterion_RMSE(predicted_depth, target_depth)
         elif self.loss_id == 'crossentorpy':
             loss = nn.CrossEntropyLoss(reconstruction, target_depth)
+        elif self.loss_id == 'mae':
+            loss = criterion_MAE(predicted_depth, target_depth)
         else:
             loss = criterion_RMSE(predicted_depth, target_depth)
         return loss

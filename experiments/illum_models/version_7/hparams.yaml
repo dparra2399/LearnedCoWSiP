@@ -1,8 +1,8 @@
-batch_size: 24
 beta: 8
-epochs: 100
 init_lr: 0.0009145173790926249
-lr_decay_gamma: 0.37425082035224766
-num_samples: 4661
-tv_reg: 0.09723338742824626
+k: 4
 loss_id: mae
+lr_decay_gamma: 0.37425082035224766
+n_tbins: 1024
+sigma: 30
+tv_reg: 0.09723338742824626

@@ -34,3 +34,6 @@ def criterion_RMSE(est, gt):
     # est should have grad
     return torch.sqrt(criterion(est, gt))
 
+def criterion_MAE(est, gt):
+    criterion = nn.L1Loss()
+    return criterion(est, gt)
