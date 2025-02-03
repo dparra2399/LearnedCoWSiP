@@ -28,7 +28,7 @@ class CodingModel(nn.Module):
             for param in self.cmat1D.parameters():
                 param.requires_grad = True
 
-            init.xavier_uniform_(self.cmat1D.weight)
+            init.kaiming_uniform_(self.cmat1D.weight)
             self.zero_norm_t = zero_norm_t
             self.beta = beta
 

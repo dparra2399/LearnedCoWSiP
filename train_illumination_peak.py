@@ -20,7 +20,7 @@ log_dir = 'experiments'
 
 if __name__ == '__main__':
 
-    logger = CSVLogger(log_dir, name="illum_models")
+    logger = TensorBoardLogger(log_dir, name="illum_peak_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",

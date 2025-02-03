@@ -8,25 +8,15 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-photon_count = 1024
-sbr = 1.0
-
-n_tbins = 1024
-k = 4
-sigma = 30
-
-#counts = torch.linspace(50, 1000, 10)
-#sbrs = torch.linspace(0.1, 5.0, 10)
-
 counts = torch.linspace(10 ** 2, 10 ** 4, 10)
 sbrs = torch.linspace(0.1, 5.0, 10)
 
-yaml_file = 'config/best_hyperparameters_3.yaml'
+yaml_file = 'config/best_hyperparameters_4.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
 
-    logger = CSVLogger(log_dir, name="illum_models")
+    logger = TensorBoardLogger(log_dir, name="illum_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
@@ -48,6 +38,9 @@ if __name__ == '__main__':
         beta = config['beta']
         num_samples = config['num_samples']
         loss_id = config['loss_id']
+        n_tbins = config['n_tbins']
+        k = config['k']
+        sigma = config['sigma']
     except (FileNotFoundError, TypeError) as e:
         print(e)
         exit(0)

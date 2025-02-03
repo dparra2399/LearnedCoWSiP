@@ -1,7 +1,0 @@
-batch_size: 81
-beta: 18
-epochs: 89
-init_lr: 0.000743327256651533
-lr_decay_gamma: 0.30926080247304144
-num_samples: 398101
-tv_reg: 0.04730477242677384

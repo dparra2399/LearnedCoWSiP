@@ -57,6 +57,51 @@ class IlluminationLayer(nn.Module):
 
         return self.cmat1D(noisy_input)
 
+class IlluminationPeakLayer(nn.Module):
+    def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', sigma=10, h_irf=None, get_from_model=False):
+        super(IlluminationPeakLayer, self).__init__()
+        self.n_tbins = n_tbins
+        self.k = k
+        self.h_irf = h_irf
+
+        if get_from_model is True:
+            model = LITIlluminationModel.load_from_checkpoint(init, strict=False)
+            self.illumination = model.backbone_net.learnable_input.data.detach().cpu().view(1, self.n_tbins)
+            self.cmat_init = model.backbone_net.coding_model.cmat1D.weight.data.detach().cpu().numpy().squeeze()
+        else:
+            cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=self.h_irf)
+            ill = Gaussian1DLayer(gauss_len=self.n_tbins)
+            self.illumination = ill(torch.tensor([0])).detach().cpu().view(1, self.n_tbins)
+            self.cmat_init = cmat_init.transpose()
+
+        self.cmat1D = torch.nn.Conv1d(in_channels=self.n_tbins
+                                      , out_channels=self.k
+                                      , kernel_size=1
+                                      , stride=1, padding=0, dilation=1, bias=False)
+
+        self.cmat1D.weight.data = torch.from_numpy(self.cmat_init[..., np.newaxis].astype(np.float32))
+
+        pulse_domain = np.arange(0, self.n_tbins)
+        pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+        self.irf_layer = IRF1DLayer(irf=pulse)
+        
+    def forward(self, bins, peak_counts, ambient_counts):
+
+        input = torch.relu(self.illumination)
+        irf_input = self.irf_layer(input.view(1, self.n_tbins)).view(self.n_tbins, 1)
+
+        current_peak, _ = torch.max(irf_input, dim=0, keepdim=True) # (n_tbins, 1)
+
+        shifts = bins.long() % self.n_tbins  # Ensure shifts are valid integers
+        shifted_tensors = torch.stack([torch.roll(irf_input, shifts=int(shift), dims=0) for i, shift in enumerate(shifts)], dim=0)  # (batch_size, n_tbins, 1)
+
+        scaled_tensors = ((shifted_tensors / current_peak) * peak_counts.view(-1, 1, 1)) + ambient_counts.view(-1, 1, 1)  # (batch_size, n_tbins, 1)
+
+        noisy_input = torch.poisson(scaled_tensors)
+
+        return self.cmat1D(noisy_input)
+
+    
 class CodingLayer(nn.Module):
     def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', h_irf=None, get_from_model=False):
         super(CodingLayer, self).__init__()
