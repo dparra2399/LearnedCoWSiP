@@ -151,3 +151,19 @@ class ZNCCLayer(nn.Module):
         pred_depths = torch.argmax(torch.transpose(zncc, -2, -1), dim=-2).squeeze(-1)
 
         return pred_depths
+    
+class IFFTReconLayer(nn.Module):
+    def __init__(self, n_tbins):
+        self.n_tbins = n_tbins
+        super(IFFTReconLayer, self).__init__()
+
+
+    def forward(self, input_compressed):
+        phasors = input_compressed[:, 0::2, :] - 1j * input_compressed[:, 1::2, :]
+        #print(phasors.shape)
+        phasors = torch.concatenate((torch.zeros(phasors.shape[0], 1, 1, dtype=phasors.dtype), phasors), dim=-2)
+        #print(phasors.shape)
+        recon = torch.fft.irfft(phasors, dim=-2, n=self.n_tbins)
+        #print(recon.shape)
+        pred_depths = torch.argmax(recon, dim=-2).squeeze(-1)
+        return pred_depths

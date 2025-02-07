@@ -94,9 +94,6 @@ class IlluminationModel(nn.Module):
         noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
         noisy_parameter = scaled_tensors + noise
 
-        #input_min = noisy_parameter.min(dim=1, keepdim=True)[0]
-        #input_max = noisy_parameter.max(dim=1, keepdim=True)[0]
-        #normal_input = (noisy_parameter - input_min) / (input_max - input_min + self.epilson)
         return self.coding_model(noisy_parameter)
 
 
@@ -136,9 +133,17 @@ class IlluminationPeakModel(nn.Module):
         noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
         noisy_parameter = scaled_tensors + noise
 
-        #input_min = noisy_parameter.min(dim=1, keepdim=True)[0]
-        #input_max = noisy_parameter.max(dim=1, keepdim=True)[0]
-        #normal_input = (noisy_parameter - input_min) / (input_max - input_min + self.epilson)
+        # irf_input = self.irf_layer(self.learnable_input.view(1, self.n_tbins)).view(self.n_tbins, 1)
+        # shifted_tensors = torch.stack(
+        #     [torch.roll(irf_input, shifts=int(shift), dims=0) for i, shift in enumerate(bins)],
+        #     dim=0)  # (batch_size, n_tbins, 1)
+        # shifted_tensors = torch.relu(shifted_tensors)
+        # scaled_tensors = torch.clamp(shifted_tensors, min=None, max=peak_counts.view(-1, 1, 1))
+
+
+        # noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
+        # noisy_parameter = scaled_tensors + noise
+
         return self.coding_model(noisy_parameter)
 
 
@@ -169,7 +174,7 @@ class LITIlluminationPeakModel(LITIlluminationBaseModel):
                     tv_reg=0.1,
                     sigma=10):
 
-        base_model = IlluminationModel(k=k, n_tbins=n_tbins, beta=beta, sigma=sigma)
+        base_model = IlluminationPeakModel(k=k, n_tbins=n_tbins, beta=beta, sigma=sigma)
         super(LITIlluminationPeakModel, self).__init__(base_model, k=k, n_tbins=n_tbins,
                                             init_lr = init_lr,
 		                                    lr_decay_gamma = lr_decay_gamma,

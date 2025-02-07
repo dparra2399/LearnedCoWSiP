@@ -1,11 +1,17 @@
 batch_size: 24
 beta: 8
 epochs: 100
-k: 8
+k: 4
 n_tbins: 1024
-sigma: 30
 init_lr: 0.0009145173790926249
 lr_decay_gamma: 0.37425082035224766
-num_samples: 4661
 tv_reg: 0.09723338742824626
 loss_id: mae
+
+dataset:
+  sigma: 30
+  num_samples: 200
+  grid_size: 10
+  minmax_counts : [1e2, 1e3]
+  minmax_sbrs: [0.1, 5.0]
+

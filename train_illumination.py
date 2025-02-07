@@ -8,23 +8,10 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-counts = torch.linspace(10 ** 2, 10 ** 4, 10)
-sbrs = torch.linspace(0.1, 5.0, 10)
-
-yaml_file = 'config/best_hyperparameters_4.yaml'
+yaml_file = 'config/average_configs/test_params_nt200.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
-
-    logger = TensorBoardLogger(log_dir, name="illum_models")
-
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
-        filename ='coded_model',
-        save_top_k=1,  # Save only the best model
-        monitor="val_loss",  # Metric to monitor
-        mode="min",  # Minimize the monitored metric
-    )
 
     try:
         with open(yaml_file, 'r') as file:
@@ -36,14 +23,33 @@ if __name__ == '__main__':
         epochs = config['epochs']
         batch_size = config['batch_size']
         beta = config['beta']
-        num_samples = config['num_samples']
         loss_id = config['loss_id']
+
+        dataset_params = config['dataset']
         n_tbins = config['n_tbins']
         k = config['k']
-        sigma = config['sigma']
+        sigma = dataset_params['sigma']
+        num_samples = dataset_params['num_samples']
+
+        minmax_counts = dataset_params['minmax_counts']
+        minmax_sbrs = dataset_params['minmax_sbrs']
+        grid_size = dataset_params['grid_size']
+
+        counts = torch.linspace(minmax_counts[0], minmax_counts[1], grid_size)
+        sbrs = torch.linspace(minmax_sbrs[0], minmax_sbrs[1], grid_size)
     except (FileNotFoundError, TypeError) as e:
         print(e)
         exit(0)
+
+    logger = TensorBoardLogger(log_dir, name="illum_models")
+
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
+        filename ='coded_model',
+        save_top_k=1,  # Save only the best model
+        monitor="val_loss",  # Metric to monitor
+        mode="min",  # Minimize the monitored metric
+    )
 
     label_module = SimulatedLabelModule(n_tbins, sources=counts, sbrs=sbrs, batch_size=batch_size,
                                         num_samples=num_samples)
@@ -67,6 +73,7 @@ if __name__ == '__main__':
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
                                beta=beta, tv_reg=tv_reg, sigma=sigma)
 
+    lit_model.save_hyperparameters(dataset_params)
     torch.autograd.set_detect_anomaly(True)
 
     trainer.fit(lit_model, datamodule=label_module)
