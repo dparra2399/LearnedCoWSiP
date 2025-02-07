@@ -3,8 +3,8 @@ from models.CM1DLayers import IlluminationLayer
 import os
 import yaml
 
-init = 'version_2'
-path = os.path.join('experiments\\illum_models', init)
+init = 'version_14'
+path = os.path.join('experiments\\illum_peak_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')
 filename = init.split('/')[-1].split('.')[0]
@@ -24,8 +24,8 @@ foldername = f'n{n_tbins}_k{k}_{loss_id}'
 print(cmat.shape)
 print(illum.shape)
 
-os.makedirs(os.path.join(folder, 'bandlimited_models', foldername), exist_ok=True)
+os.makedirs(os.path.join(folder, 'bandlimited_peak_models', foldername), exist_ok=True)
 
-np.save(os.path.join(folder, 'bandlimited_models', foldername, 'coded_model'), cmat)
-np.save(os.path.join(folder, 'bandlimited_models', foldername, 'illum_model'), illum)
+np.save(os.path.join(folder, 'bandlimited_peak_models', foldername, 'coded_model'), cmat)
+np.save(os.path.join(folder, 'bandlimited_peak_models', foldername, 'illum_model'), illum)
 
