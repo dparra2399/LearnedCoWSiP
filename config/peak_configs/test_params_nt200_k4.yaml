@@ -1,17 +1,18 @@
-batch_size: 24
-beta: 45
-epochs: 50
+init_lr: 0.013555721642207629
+lr_decay_gamma: 0.31228240706108457
+beta: 8
+beta_max: 20
+tv_reg: 0.09723338742824626
+batch_size: 8
+loss_id: mae
 k: 4
 n_tbins: 200
-init_lr: 0.050226343864103115
-lr_decay_gamma: 0.16375838881528834
-tv_reg: 0.001
-loss_id: 'mae'
+epochs: 10
 
 
 dataset:
   sigma: 10
-  num_samples: 8661
+  num_samples: 15000
   grid_size: 10
-  minmax_counts : [10, 30]
-  minmax_sbrs: [1, 15]
+  minmax_counts : [200, 900]
+  minmax_sbrs: [1, 50]

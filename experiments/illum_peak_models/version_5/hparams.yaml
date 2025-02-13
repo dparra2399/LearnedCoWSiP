@@ -1,0 +1,17 @@
+beta: 8
+beta_max: 8
+grid_size: 10
+init_lr: 0.013555721642207629
+k: 4
+loss_id: mae
+lr_decay_gamma: 0.31228240706108457
+minmax_counts:
+- 200
+- 900
+minmax_sbrs:
+- 1
+- 50
+n_tbins: 200
+num_samples: 15000
+sigma: 10
+tv_reg: 0.09723338742824626

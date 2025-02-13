@@ -1,0 +1,18 @@
+batch_size: 13
+beta: 45
+epochs: 50
+k: 8
+n_tbins: 200
+init_lr: 0.05
+lr_decay_gamma: 0.16
+tv_reg: 0.0012
+loss_id: 'mae'
+
+dataset:
+  sigma: 10
+  num_samples: 4661
+  grid_size: 10
+  minmax_counts : [50, 200]
+  minmax_sbrs: [0.1, 5.0]
+
+

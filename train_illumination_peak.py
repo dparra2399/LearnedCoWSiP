@@ -23,6 +23,7 @@ if __name__ == '__main__':
         epochs = config['epochs']
         batch_size = config['batch_size']
         beta = config['beta']
+        beta_max = config['beta_max']
         loss_id = config['loss_id']
 
         dataset_params = config['dataset']
@@ -68,12 +69,13 @@ if __name__ == '__main__':
     pl.seed_everything(42)
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.5,
+                          log_every_n_steps=250, val_check_interval=1.0,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationPeakModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, sigma=sigma)
-
+                               beta=beta, beta_max=beta_max, tv_reg=tv_reg, sigma=sigma)
+    
+    lit_model.save_hyperparameters(dataset_params)
     torch.autograd.set_detect_anomaly(True)
 
     trainer.fit(lit_model, datamodule=label_module)

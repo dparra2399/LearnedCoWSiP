@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-yaml_file = 'config/average_configs/test_params_nt200.yaml'
+yaml_file = 'config/average_configs/best_params_nt1024_k8.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     pl.seed_everything(42)
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=0.5,
+                          log_every_n_steps=250, val_check_interval=1.0,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
