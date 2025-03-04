@@ -1,10 +1,11 @@
 init_lr: 0.013555721642207629
 lr_decay_gamma: 0.31228240706108457
 beta: 8
-beta_max: 20
+beta_max: 8
 tv_reg: 0.09723338742824626
 batch_size: 8
 loss_id: mae
+recon: zncc
 k: 4
 n_tbins: 200
 epochs: 10
@@ -12,7 +13,15 @@ epochs: 10
 
 dataset:
   sigma: 10
-  num_samples: 15000
+  num_samples: 4661
   grid_size: 10
-  minmax_counts : [200, 900]
-  minmax_sbrs: [1, 50]
+  minmax_counts : [100, 5000]
+  minmax_sbrs: [0.1, 5.0]
+  peak_factor : 0.05
+
+model_params:
+  learn_illum: true
+  learn_coding_mat : false
+
+  init_illum: null
+  init_coding_mat: TruncatedFourier

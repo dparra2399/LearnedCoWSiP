@@ -6,3 +6,10 @@ lr_decay_gamma: 0.37425082035224766
 n_tbins: 1024
 sigma: 30
 tv_reg: 0.09723338742824626
+recon : zncc
+minmax_counts:
+- 100
+- 5000
+minmax_sbrs:
+- 0.1
+- 5.0

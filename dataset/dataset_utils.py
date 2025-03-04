@@ -75,11 +75,11 @@ class SimulatedLabelModule(pl.LightningDataModule):
 
 
     def train_dataloader(self):
-        train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4,
+        train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=15,
                                       persistent_workers=True, shuffle=True)
         return train_dataloader
 
     def val_dataloader(self):
-        val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=4,
+        val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=15,
                                     persistent_workers=True)
         return val_dataloader

@@ -7,21 +7,13 @@ import torch
 import yaml
 
 
-storage = "sqlite:///optuna_studies/illum_studies/study_illum_006.db"
-config_file = 'config/average_configs/best_params_nt200_k8.yaml'
+storage = "sqlite:///optuna_studies/illum_studies/study_illum_001.db"
+config_file = 'config/average_configs/test_params_nt200.yaml'
 
-try:
-    with open(config_file, 'r') as file:
-        config = yaml.safe_load(file)
-
-    init_lr = config['init_lr']
-    lr_decay_gamma = config['lr_decay_gamma']
-    tv_reg = config['tv_reg']
-    epochs = config['epochs']
-    batch_size = config['batch_size']
-    beta = config['beta']
+with open(config_file, 'r') as file:
+    config = yaml.safe_load(file)
     loss_id = config['loss_id']
-
+    
     dataset_params = config['dataset']
     n_tbins = config['n_tbins']
     k = config['k']
@@ -32,11 +24,8 @@ try:
     minmax_sbrs = dataset_params['minmax_sbrs']
     grid_size = dataset_params['grid_size']
 
-    print(minmax_counts)
-    print(minmax_sbrs)
-except (FileNotFoundError, TypeError) as e:
-    print(e)
-    exit(0)
+    counts = torch.linspace(minmax_counts[0], minmax_counts[1], grid_size)
+    sbrs = torch.linspace(minmax_sbrs[0], minmax_sbrs[1], grid_size)
 
 class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
     def __init__(self, *args, **kwargs):
@@ -44,18 +33,14 @@ class OptunaPruning(PyTorchLightningPruningCallback, pl.Callback):
 
 
 def objective(trial):
-    #init_lr = trial.suggest_float("init_lr", 1e-5, 1e-1, log=True)
-    #lr_decay_gamma = trial.suggest_float("lr_decay_gamma", 1e-1, 1, log=True)
-    #batch_size = trial.suggest_int("batch_size", 8, 128)
-    #epochs = trial.suggest_int("epochs", 10, 50)
-    #tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
-    #beta = trial.suggest_int("beta", 1, 100)
+    init_lr = trial.suggest_float("init_lr", 1e-5, 1e-1, log=True)
+    lr_decay_gamma = trial.suggest_float("lr_decay_gamma", 1e-1, 1, log=True)
+    batch_size = trial.suggest_int("batch_size", 8, 128)
+    epochs = trial.suggest_int("epochs", 10, 50)
+    tv_reg = trial.suggest_float("tv_reg", 1e-5, 1e-1, log=True)
+    beta = trial.suggest_int("beta", 1, 100)
     #num_samples = trial.suggest_int("num_samples", 4000, 32000)
-    #loss_id = trial.suggest_categorical('loss_id', ['mae', 'rsme', 'chardonnier'])
-    #grid_size = trial.suggest_int("grid_size", 10, 30)
-
-    counts = torch.linspace(minmax_counts[0], minmax_counts[1], grid_size)
-    sbrs = torch.linspace(minmax_sbrs[0], minmax_sbrs[1], grid_size)
+    
 
     label_module = SimulatedLabelModule(n_tbins, sources=counts, sbrs=sbrs, batch_size=batch_size,
                                         num_samples=num_samples)
@@ -69,7 +54,7 @@ def objective(trial):
         trainer = pl.Trainer(
             devices=[0, 1],
             accelerator='gpu',
-            val_check_interval=1.0,
+            val_check_interval=0.5,
             max_epochs=epochs,
             logger=False,
             enable_checkpointing=False,
@@ -78,7 +63,7 @@ def objective(trial):
     else:
         trainer = pl.Trainer(
             max_epochs=epochs,
-            val_check_interval=1.0,
+            val_check_interval=0.5,
             logger=False,
             enable_checkpointing=False,
             callbacks=[OptunaPruning(trial, monitor="val_loss")],
@@ -108,9 +93,9 @@ if __name__ == "__main__":
         config = yaml.safe_load(file)
     study.enqueue_trial(config)  # Pre-tuned values
 
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=200)
 
     # Print the best hyperparameters
     print("Best hyperparameters:", study.best_params)
-    with open(f'config/average_configs/best_params_nt{n_tbins}_k{k}.yaml', 'a+') as f:
+    with open(f'config/average_configs/best_params_n{n_tbins}_k{k}.yaml', 'w+') as f:
         yaml.dump(study.best_params, f)

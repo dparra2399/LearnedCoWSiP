@@ -1,17 +1,24 @@
 batch_size: 24
 beta: 8
-epochs: 100
+epochs: 10
 k: 4
 n_tbins: 1024
 init_lr: 0.0009145173790926249
 lr_decay_gamma: 0.37425082035224766
 tv_reg: 0.09723338742824626
 loss_id: mae
+recon: ncc
 
 dataset:
   sigma: 30
   num_samples: 4661
   grid_size: 10
-  minmax_counts : [1e2, 1e4]
+  minmax_counts : [100, 5000]
   minmax_sbrs: [0.1, 5.0]
 
+model_params:
+  learn_illum: true
+  learn_coding_mat : true
+
+  init_illum: null
+  init_coding_mat: null

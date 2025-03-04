@@ -35,6 +35,16 @@ if __name__ == '__main__':
         minmax_sbrs = dataset_params['minmax_sbrs']
         grid_size = dataset_params['grid_size']
 
+        model_params = config['model_params']
+
+        learn_illum = model_params['learn_illum']
+        learn_coding_mat = model_params['learn_coding_mat']
+
+        init_illum = model_params['init_illum']
+        init_coding_mat = model_params['init_coding_mat']
+
+        recon = config['recon']
+
         counts = torch.linspace(minmax_counts[0], minmax_counts[1], grid_size)
         sbrs = torch.linspace(minmax_sbrs[0], minmax_sbrs[1], grid_size)
     except (FileNotFoundError, TypeError) as e:
@@ -71,9 +81,10 @@ if __name__ == '__main__':
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, sigma=sigma)
+                               beta=beta, tv_reg=tv_reg, sigma=sigma, recon=recon,init_coding_mat=init_coding_mat,learn_coding_mat=learn_coding_mat,
+                               init_illum=init_illum,learn_illum=learn_illum)
 
-    lit_model.save_hyperparameters(dataset_params)
+    lit_model.save_hyperparameters({'dataset': dataset_params, 'epochs': epochs, 'model_params': model_params})
     torch.autograd.set_detect_anomaly(True)
 
     trainer.fit(lit_model, datamodule=label_module)

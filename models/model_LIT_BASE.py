@@ -107,7 +107,9 @@ class LITIlluminationBaseModel(pl.LightningModule):
                     init_lr = 1e-4,
 		            lr_decay_gamma = 0.9,
 		            loss_id = 'rmse',
-                    tv_reg = 0.1):
+                    tv_reg = 0.1,
+                    peak_factor = 0,
+                    peak_reg = 0):
         super(LITIlluminationBaseModel, self).__init__()
 
         self.init_lr = init_lr
@@ -118,6 +120,8 @@ class LITIlluminationBaseModel(pl.LightningModule):
         self.tv_reg = tv_reg
         self.print_logger = logging.getLogger(__name__)
         self.backbone_net = backbone_net
+        self.peak_factor = peak_factor
+        self.peak_reg = peak_reg
         self.automatic_optimization = False
 
     def tv_regularization(self):
@@ -126,6 +130,15 @@ class LITIlluminationBaseModel(pl.LightningModule):
         tv_in = torch.pow(weights[:, 1:, :] - weights[:, :-1, :], 2)
         tv_loss += torch.sum(torch.sqrt(tv_in + 1e-6))
         return tv_loss
+    
+    def peak_regularization(self, sample):
+        output = self.backbone_net.learnable_input
+
+        amb_counts = sample['source'] / sample['background']
+        amb_per_bin = amb_counts / self.n_tbins
+        max_value = (self.peak_factor * sample['source']) - amb_per_bin
+        peak_penalty = torch.mean(torch.relu(output - max_value) ** 2)
+        return peak_penalty
     
     def compute_losses(self, sample, reconstruction, predicted_depth):
         target_depth = sample['depth'].to(torch.float32)
@@ -159,8 +172,9 @@ class LITIlluminationBaseModel(pl.LightningModule):
 
 
         tv_loss = self.tv_regularization()
+        peak_loss = self.peak_regularization(sample)
 
-        loss = self.compute_losses(sample, recon, p_depth).to(torch.float32) + self.tv_reg * tv_loss
+        loss = self.compute_losses(sample, recon, p_depth).to(torch.float32) + self.tv_reg * tv_loss + self.peak_reg * peak_loss
 
         if (batch_idx % 300 == 0):
             self.log('train_loss', loss)
@@ -172,16 +186,24 @@ class LITIlluminationBaseModel(pl.LightningModule):
         loss.backward(retain_graph=True)
         
         torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-
         optimizer.step()
+
+
+        #with torch.no_grad():
+            #self.backbone_net.coding_model.cmat1D.weight.data = self.backbone_net.coding_model.cmat1D.weight.data  - self.backbone_net.coding_model.cmat1D.weight.data.mean(dim=0, keepdim=True)
+            #min_val = self.backbone_net.coding_model.cmat1D.weight.data.min()
+            #max_val = self.backbone_net.coding_model.cmat1D.weight.data.max()
+            #self.backbone_net.coding_model.cmat1D.weight.data = 2 * (self.backbone_net.coding_model.cmat1D.weight.data - min_val) / (max_val - min_val + 1e-8) - 1
+
         return loss
 
     def validation_step(self, sample, batch_idx):
         recon, p_depth = self.forward_wrapper(sample)
 
         tv_loss = self.tv_regularization()
+        peak_loss = self.peak_regularization(sample)
 
-        loss = self.compute_losses(sample, recon, p_depth).to(torch.float32) + self.tv_reg * tv_loss
+        loss = self.compute_losses(sample, recon, p_depth).to(torch.float32) + self.tv_reg * tv_loss + self.peak_reg * peak_loss
 
         if (batch_idx % 250 == 0):
             self.log_dict({"val_loss": loss})
