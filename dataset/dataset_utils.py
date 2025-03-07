@@ -11,7 +11,8 @@ from torch.utils.data import random_split
 
 class SimulatedDataModule(pl.LightningDataModule):
     def __init__(self, nt, photon_counts, sbrs, batch_size, sigma=1,
-                 num_samples=None, train_val_split: float = 0.8, normalize=False):
+                 num_samples=None, start_bin=3, end_bin=3,
+                 train_val_split: float = 0.8, normalize=False):
 
         super().__init__()
         self.batch_size = batch_size
@@ -51,7 +52,8 @@ class SimulatedDataModule(pl.LightningDataModule):
 
 class SimulatedLabelModule(pl.LightningDataModule):
     def __init__(self, nt, sources, sbrs, batch_size=8,
-                 num_samples=None, train_val_split: float = 0.8):
+                 num_samples=None, start_bin=3, end_bin=3,
+                 train_val_split: float = 0.8):
 
         super().__init__()
         self.batch_size = batch_size
@@ -62,10 +64,12 @@ class SimulatedLabelModule(pl.LightningDataModule):
         self.train_val_split = train_val_split
         self.sources = sources
         self.sbrs = sbrs
-
+        self.start_bin = start_bin
+        self.end_bin = end_bin
 
     def setup(self, stage=None):
-        dataset = SampleLabels(self.n_tbins, self.sources, self.sbrs, num_samples=self.num_samples)
+        dataset = SampleLabels(self.n_tbins, self.sources, self.sbrs, num_samples=self.num_samples,
+                               start_bin=self.start_bin, end_bin=self.end_bin)
 
         num_samples = len(dataset)
         train_size = int(np.floor(num_samples * self.train_val_split))

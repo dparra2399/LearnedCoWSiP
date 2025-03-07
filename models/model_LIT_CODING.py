@@ -102,16 +102,16 @@ class NCCCodingModel(nn.Module):
 
         def forward(self, input_hist):
             # torch.autograd.set_detect_anomaly(True)
-            zero_weight = self.cmat1D.weight - self.cmat1D.weight.mean(dim=0, keepdim=True)
+            # zero_weight = self.cmat1D.weight - self.cmat1D.weight.mean(dim=0, keepdim=True)
             # tanh_weight = torch.tanh(zero_weight).to(self.device)
 
-            output = nn.functional.conv1d(
-                input_hist, zero_weight, self.cmat1D.bias, self.cmat1D.stride, self.cmat1D.padding
-            )
-            #output = self.cmat1D(input_hist)
+            # output = nn.functional.conv1d(
+            #     input_hist, zero_weight, self.cmat1D.bias, self.cmat1D.stride, self.cmat1D.padding
+            # )
+            output = self.cmat1D(input_hist)
 
             input_norm_t = self.norm_t(output, dim=-2).to(self.device)
-            corr_norm_t = self.norm_t(zero_weight, dim=0).to(self.device)
+            corr_norm_t = self.norm_t(self.cmat1D.weight, dim=0).to(self.device)
 
             ncc = torch.matmul(torch.transpose(input_norm_t, -2, -1), corr_norm_t.squeeze())
             ncc = torch.transpose(ncc, -2, -1)

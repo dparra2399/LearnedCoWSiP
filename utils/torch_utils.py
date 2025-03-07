@@ -4,7 +4,7 @@ import torch.nn as nn
 import os
 
 C = 3e8
-
+EPSILON = 1e-8
 
 class CharbonnierLoss(nn.Module):
     def __init__(self, epsilon=1e-3):
@@ -29,12 +29,11 @@ def tof2depth(tof):
 def bin2depth(b, num_bins, tau):
     return tof2depth(bin2tof(b, num_bins, tau))
 
-def norm_t(signal, dim=-2):
-    mn = torch.mean(signal, dim=dim, keepdim=True)
-    return signal - mn
+def norm_t(signal, dim=-1):
+    return signal / (torch.linalg.norm(signal, ord=2, dim=dim, keepdim=True) + EPSILON)
 
 def zero_norm_t(signal, dim=-2):
-    norm_sig = norm_t(signal, dim=dim)
+    norm_sig = signal - torch.mean(signal, dim=dim, keepdim=True)
     std = torch.std(signal, dim=dim, keepdim=True)
     return norm_sig / std
 

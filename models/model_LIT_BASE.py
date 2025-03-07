@@ -189,11 +189,11 @@ class LITIlluminationBaseModel(pl.LightningModule):
         optimizer.step()
 
 
-        #with torch.no_grad():
-            #self.backbone_net.coding_model.cmat1D.weight.data = self.backbone_net.coding_model.cmat1D.weight.data  - self.backbone_net.coding_model.cmat1D.weight.data.mean(dim=0, keepdim=True)
-            #min_val = self.backbone_net.coding_model.cmat1D.weight.data.min()
-            #max_val = self.backbone_net.coding_model.cmat1D.weight.data.max()
-            #self.backbone_net.coding_model.cmat1D.weight.data = 2 * (self.backbone_net.coding_model.cmat1D.weight.data - min_val) / (max_val - min_val + 1e-8) - 1
+        # with torch.no_grad():
+        #    self.backbone_net.coding_model.cmat1D.weight.data = self.backbone_net.coding_model.cmat1D.weight.data  - self.backbone_net.coding_model.cmat1D.weight.data.mean(dim=0, keepdim=True)
+        #    min_val = self.backbone_net.coding_model.cmat1D.weight.data.min()
+        #    max_val = self.backbone_net.coding_model.cmat1D.weight.data.max()
+        #    self.backbone_net.coding_model.cmat1D.weight.data = 2 * (self.backbone_net.coding_model.cmat1D.weight.data - min_val) / (max_val - min_val + 1e-8) - 1
 
         return loss
 

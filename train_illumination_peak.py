@@ -32,6 +32,8 @@ if __name__ == '__main__':
         k = config['k']
         sigma = dataset_params['sigma']
         num_samples = dataset_params['num_samples']
+        start_bin = dataset_params['start_bin']
+        end_bin = dataset_params['end_bin']
 
         minmax_counts = dataset_params['minmax_counts']
         minmax_sbrs = dataset_params['minmax_sbrs']
@@ -67,7 +69,7 @@ if __name__ == '__main__':
     )
 
     label_module = SimulatedLabelModule(n_tbins, sources=counts, sbrs=sbrs, batch_size=batch_size,
-                                        num_samples=num_samples)
+                                        num_samples=num_samples, start_bin=start_bin, end_bin=end_bin)
     label_module.setup()
 
     print(len(label_module.train_dataset))

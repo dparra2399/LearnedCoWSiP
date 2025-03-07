@@ -11,10 +11,10 @@ from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class SampleLabels(torch.utils.data.Dataset):
-    def __init__(self, nt, sources, sbrs, num_samples=10):
+    def __init__(self, nt, sources, sbrs, num_samples=10, start_bin=3, end_bin=3):
         self.nt = nt
         self.num_samples = num_samples
-        labels = torch.linspace(3, self.nt-3, self.num_samples).to(torch.int)
+        labels = torch.linspace(start_bin, self.nt-end_bin, self.num_samples).to(torch.int)
         
         labeled_tensors = []
         for i in range(sources.shape[-1]):

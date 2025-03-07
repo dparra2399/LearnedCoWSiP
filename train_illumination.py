@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 import yaml
 
-yaml_file = 'config/average_configs/best_params_nt1024_k8.yaml'
+yaml_file = 'config/average_configs/tester.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
@@ -34,6 +34,8 @@ if __name__ == '__main__':
         minmax_counts = dataset_params['minmax_counts']
         minmax_sbrs = dataset_params['minmax_sbrs']
         grid_size = dataset_params['grid_size']
+        start_bin = dataset_params['start_bin']
+        end_bin = dataset_params['end_bin']
 
         model_params = config['model_params']
 
@@ -47,6 +49,7 @@ if __name__ == '__main__':
 
         counts = torch.linspace(minmax_counts[0], minmax_counts[1], grid_size)
         sbrs = torch.linspace(minmax_sbrs[0], minmax_sbrs[1], grid_size)
+
     except (FileNotFoundError, TypeError) as e:
         print(e)
         exit(0)
@@ -62,7 +65,7 @@ if __name__ == '__main__':
     )
 
     label_module = SimulatedLabelModule(n_tbins, sources=counts, sbrs=sbrs, batch_size=batch_size,
-                                        num_samples=num_samples)
+                                        num_samples=num_samples, start_bin=start_bin, end_bin=end_bin)
     label_module.setup()
 
     print(len(label_module.train_dataset))
@@ -77,7 +80,7 @@ if __name__ == '__main__':
     pl.seed_everything(42)
 
     trainer = pl.Trainer(logger=logger, max_epochs=epochs,
-                          log_every_n_steps=250, val_check_interval=1.0,
+                          log_every_n_steps=250, val_check_interval=0.5,
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
