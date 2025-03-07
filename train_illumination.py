@@ -29,6 +29,7 @@ if __name__ == '__main__':
         n_tbins = config['n_tbins']
         k = config['k']
         sigma = dataset_params['sigma']
+        irf_filename = dataset_params['irf_filename']
         num_samples = dataset_params['num_samples']
 
         minmax_counts = dataset_params['minmax_counts']
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         print(e)
         exit(0)
 
-    logger = TensorBoardLogger(log_dir, name="illum_models")
+    logger = CSVLogger(log_dir, name="illum_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
@@ -84,7 +85,8 @@ if __name__ == '__main__':
                           callbacks=[checkpoint_callback])
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
-                               beta=beta, tv_reg=tv_reg, sigma=sigma, recon=recon,init_coding_mat=init_coding_mat,learn_coding_mat=learn_coding_mat,
+                               beta=beta, tv_reg=tv_reg, sigma=sigma, irf_filename=irf_filename,
+                               recon=recon,init_coding_mat=init_coding_mat,learn_coding_mat=learn_coding_mat,
                                init_illum=init_illum,learn_illum=learn_illum)
 
     lit_model.save_hyperparameters({'dataset': dataset_params, 'epochs': epochs, 'model_params': model_params})

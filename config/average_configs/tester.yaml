@@ -11,6 +11,7 @@ recon: ncc
 
 dataset:
   sigma: 30
+  irf_filename: irf/pulse_10mhz.csv
   num_samples: 4661
   grid_size: 10
   minmax_counts : [100, 5000]

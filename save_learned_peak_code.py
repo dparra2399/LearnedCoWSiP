@@ -3,7 +3,7 @@ from models.CM1DLayers import IlluminationLayer
 import os
 import yaml
 
-init = 'version_14'
+init = 'n1024_k4_mae_fourier'
 path = os.path.join('experiments\\illum_peak_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')
@@ -20,7 +20,7 @@ coding_mat = IlluminationLayer(n_tbins=n_tbins, k=k, init=ckpt_path, get_from_mo
 cmat = np.transpose(np.squeeze(coding_mat.cmat1D.weight.data.detach().clone().numpy()))
 illum = np.transpose(coding_mat.illumination.data.detach().numpy())
 
-foldername = f'n{n_tbins}_k{k}_{loss_id}'
+foldername = f'n{n_tbins}_k{k}_{loss_id}_fourier'
 print(cmat.shape)
 print(illum.shape)
 

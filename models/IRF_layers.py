@@ -32,6 +32,7 @@ class Gaussian1DLayer(nn.Module):
 
 
 class IRF1DLayer(nn.Module):
+
     def __init__(self, irf, conv_dim=0):
         super(IRF1DLayer, self).__init__()
 

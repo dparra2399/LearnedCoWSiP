@@ -3,7 +3,7 @@ from models.CM1DLayers import IlluminationLayer
 import os
 import yaml
 
-init = 'version_2'
+init = 'version_4'
 path = os.path.join('experiments\\illum_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')

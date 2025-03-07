@@ -17,3 +17,15 @@ def get_coding_scheme(coding_id, n_tbins, k, h_irf):
     else:
         assert False, 'Coding ID WRONGGGG'
     return coding_obj.correlations
+
+def get_irf(irf_filename, n_tbins):
+    irf = np.genfromtxt(irf_filename, delimiter=',')
+    w = irf
+    x = np.arange(w.size)
+    new_length = n_tbins
+    new_x = np.linspace(x.min(), x.max(), new_length)
+    new_y = sp.interpolate.interp1d(x, w, kind='cubic')(new_x)
+    new_y = np.roll(new_y, (new_y.shape[0] // 2) - np.argmax(new_y))
+    new_y = new_y / np.sum(new_y)
+    return new_y
+

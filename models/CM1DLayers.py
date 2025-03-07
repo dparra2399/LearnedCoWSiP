@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from utils.torch_utils import zero_norm_t, norm_t
 import numpy as np
-from utils.tirf_utils import get_coding_scheme
+from utils.tirf_utils import get_coding_scheme, get_irf
 from models.model_LIT_CODING import LITCodingModel, LITIlluminationModel
 from models.IRF_layers import Gaussian1DLayer, IRF1DLayer
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
@@ -10,11 +10,19 @@ from IPython.core import debugger
 breakpoint = debugger.set_trace
 
 class IlluminationLayer(nn.Module):
-    def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', sigma=10, h_irf=None, get_from_model=False):
+    def __init__(self, k=3, n_tbins=1024, init='TruncatedFourier', sigma=10, irf_filename=None, get_from_model=False):
         super(IlluminationLayer, self).__init__()
         self.n_tbins = n_tbins
         self.k = k
-        self.h_irf = h_irf
+
+        if irf_filename is not None:
+            pulse = get_irf(irf_filename, n_tbins)
+        else:
+            pulse_domain = np.arange(0, self.n_tbins)
+            pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+            pulse = pulse / pulse.sum()
+
+        self.irf_layer = IRF1DLayer(irf=pulse)
 
         if get_from_model is True:
             model = LITIlluminationModel.load_from_checkpoint(init, strict=False)
@@ -22,7 +30,7 @@ class IlluminationLayer(nn.Module):
             self.cmat_init = model.backbone_net.coding_model.cmat1D.weight.data.detach().cpu().numpy().squeeze()
             #self.cmat_init = self.cmat_init - np.mean(self.cmat_init, axis=0)
         else:
-            cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=self.h_irf)
+            cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=pulse)
             ill = Gaussian1DLayer(gauss_len=self.n_tbins)
             self.illumination = ill(torch.tensor([0])).detach().cpu().view(self.n_tbins, 1)
             self.cmat_init = cmat_init.transpose()
@@ -34,9 +42,9 @@ class IlluminationLayer(nn.Module):
 
         self.cmat1D.weight.data = torch.from_numpy(self.cmat_init[..., np.newaxis].astype(np.float32))
 
-        pulse_domain = np.arange(0, self.n_tbins)
-        pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
-        self.irf_layer = IRF1DLayer(irf=pulse)
+
+    def get_irf_func(self):
+        return self.irf_layer.irf_weights.squeeze().detach().cpu().numpy()
 
     def get_output_illumination(self, photon_count, sbr):
         illum = self.irf_layer(self.illumination.view(1, self.n_tbins)).view(self.n_tbins, 1).squeeze()
@@ -50,8 +58,7 @@ class IlluminationLayer(nn.Module):
 
         scaled_tensor = illum * scaling_factor + amb_per_bin  # (batch_size, n_tbins, 1)
 
-        clamped_tensor = self.irf_layer(scaled_tensor.view(1, self.n_tbins)).view(self.n_tbins, 1)
-        return clamped_tensor
+        return scaled_tensor
 
         
     def forward(self, bins, photon_counts, sbrs):

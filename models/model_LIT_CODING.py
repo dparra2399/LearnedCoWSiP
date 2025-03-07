@@ -9,7 +9,7 @@ from models.IRF_layers import IRF1DLayer
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
 import torch.nn.init as init
 import torch.nn.utils as utils
-from utils.tirf_utils import get_coding_scheme
+from utils.tirf_utils import get_coding_scheme, get_irf
 breakpoint = debugger.set_trace
 
 class ZNCCCodingModel(nn.Module):
@@ -171,7 +171,7 @@ class IFFTCodingModel(nn.Module):
 
 class IlluminationModel(nn.Module):
 
-    def __init__(self, coding_model, k=3, n_tbins=1024, beta=100,  sigma=10, init_illum=None, learn_illum=True):
+    def __init__(self, coding_model, n_tbins=1024, sigma=10, irf_filename=None, init_illum=None, learn_illum=True):
         super(IlluminationModel, self).__init__()
 
         self.n_tbins = n_tbins
@@ -191,8 +191,12 @@ class IlluminationModel(nn.Module):
             self.learnable_input.data.fill_(1.0) 
 
         self.coding_model = coding_model
-        pulse_domain = np.arange(0, self.n_tbins)
-        pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+
+        if irf_filename is not None:
+            pulse = get_irf(irf_filename, n_tbins)
+        else:
+            pulse_domain = np.arange(0, self.n_tbins)
+            pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
         self.irf_layer = IRF1DLayer(irf=pulse)
 
     def forward(self, bins, photon_counts, sbrs):
@@ -314,6 +318,7 @@ class LITIlluminationModel(LITIlluminationBaseModel):
                     beta=100,
                     tv_reg=0.1,
                     sigma=10,
+                    irf_filename=None,
                     recon='zncc',
                     init_coding_mat=None,
                     learn_coding_mat=True,
@@ -329,9 +334,10 @@ class LITIlluminationModel(LITIlluminationBaseModel):
         else:
             assert False, 'no no'
 
-        base_model = IlluminationModel(coding_model, k=k, 
+        base_model = IlluminationModel(coding_model,
                                        n_tbins=n_tbins, 
-                                       sigma=sigma, 
+                                       sigma=sigma,
+                                       irf_filename=irf_filename,
                                        init_illum=init_illum, 
                                        learn_illum=learn_illum)
 
