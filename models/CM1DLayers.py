@@ -5,7 +5,7 @@ import numpy as np
 from utils.tirf_utils import get_coding_scheme, get_irf
 from models.model_LIT_CODING import LITCodingModel, LITIlluminationModel
 from models.IRF_layers import Gaussian1DLayer, IRF1DLayer
-from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
+from felipe_utils.research_utils.signalproc_ops import gaussian_pulse, circular_corr
 from IPython.core import debugger
 breakpoint = debugger.set_trace
 
@@ -16,19 +16,21 @@ class IlluminationLayer(nn.Module):
         self.k = k
 
         if irf_filename is not None:
-            pulse = get_irf(irf_filename, n_tbins)
+            self.irf = get_irf(irf_filename, n_tbins)
         else:
+            print(irf_filename)
             pulse_domain = np.arange(0, self.n_tbins)
             pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
-            pulse = pulse / pulse.sum()
+            self.irf = pulse / pulse.sum()
 
-        self.irf_layer = IRF1DLayer(irf=pulse)
+        self.irf_layer = IRF1DLayer(irf=self.irf)
 
         if get_from_model is True:
             model = LITIlluminationModel.load_from_checkpoint(init, strict=False)
             self.illumination = model.backbone_net.learnable_input.data.detach().cpu().view(self.n_tbins, 1)
             self.cmat_init = model.backbone_net.coding_model.cmat1D.weight.data.detach().cpu().numpy().squeeze()
             #self.cmat_init = self.cmat_init - np.mean(self.cmat_init, axis=0)
+            self.cmat_init = np.transpose(circular_corr(self.irf.reshape(self.n_tbins, 1), np.transpose(self.cmat_init), axis=0))
         else:
             cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=pulse)
             ill = Gaussian1DLayer(gauss_len=self.n_tbins)

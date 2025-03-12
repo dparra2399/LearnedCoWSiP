@@ -1,5 +1,5 @@
-init_lr: 0.013555721642207629
-lr_decay_gamma: 0.31228240706108457
+init_lr: 0.0018
+lr_decay_gamma: 0.37425082035224766
 beta: 8
 tv_reg: 1.7925542621817476e-05
 batch_size: 8
@@ -8,16 +8,19 @@ k: 8
 n_tbins: 1024
 epochs: 50
 recon: zncc
+peak_reg: null
+beta_max: 8
 
 dataset:
-  sigma: 30
-  irf_filename: null
-  account_irf: false
-  account_illum: false
+  sigma: 10
   num_samples: 15000
+  irf_filename: null
+  account_irf: true
+  account_illum: false
   grid_size: 10
-  minmax_counts : [100, 5000]
-  minmax_sbrs: [0.1, 5.0]
+  minmax_counts : [1000, 1000]
+  minmax_sbrs: [0.1, 10.0]
+  peak_factor : 0.03
   start_bin: 3
   end_bin: 3
 

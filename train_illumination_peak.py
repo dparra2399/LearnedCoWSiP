@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 import yaml
 
 
-yaml_file = 'config/peak_configs/test_params_nt1024_k4.yaml'
+yaml_file = 'config/peak_configs/test_params_nt1024_k8.yaml'
 log_dir = 'experiments'
 
 if __name__ == '__main__':
@@ -31,7 +31,11 @@ if __name__ == '__main__':
         n_tbins = config['n_tbins']
         k = config['k']
         sigma = dataset_params['sigma']
+        irf_filename = dataset_params['irf_filename']
         num_samples = dataset_params['num_samples']
+        account_irf = dataset_params['account_irf']
+        account_illum = dataset_params['account_illum']
+
         start_bin = dataset_params['start_bin']
         end_bin = dataset_params['end_bin']
 
@@ -58,7 +62,7 @@ if __name__ == '__main__':
         exit(0)
 
 
-    logger = CSVLogger(log_dir, name="illum_peak_models")
+    logger = TensorBoardLogger(log_dir, name="illum_peak_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",
@@ -89,6 +93,7 @@ if __name__ == '__main__':
 
     lit_model = LITIlluminationPeakModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
                                beta=beta, beta_max=beta_max, peak_factor=peak_factor, peak_reg=peak_reg, tv_reg=tv_reg, sigma=sigma, recon=recon,
+                               irf_filename=irf_filename, account_irf=account_irf, account_illum=account_illum,
                                init_coding_mat=init_coding_mat,learn_coding_mat=learn_coding_mat,
                                init_illum=init_illum,learn_illum=learn_illum)
     

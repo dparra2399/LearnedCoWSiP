@@ -12,6 +12,9 @@ recon: zncc
 dataset:
   sigma: 30
   num_samples: 4661
+  irf_filename: null
+  account_irf: true
+  account_illum: false
   grid_size: 10
   minmax_counts : [100, 5000]
   minmax_sbrs: [0.1, 5.0]

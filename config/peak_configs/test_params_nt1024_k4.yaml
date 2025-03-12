@@ -1,31 +1,34 @@
-init_lr: 0.0009145173790926249
-lr_decay_gamma: 0.31228240706108457
 beta: 8
 beta_max: 8
-tv_reg: 0.09723338742824626
-peak_reg: null
-batch_size: 8
-loss_id: mae
-recon: ifft
-k: 4
-n_tbins: 1024
-epochs: 50
-
 
 dataset:
-  sigma: 10
-  num_samples: 4661
+  irf_filename: null
+  account_irf: true
+  account_illum: false
   grid_size: 10
-  minmax_counts : [1000, 1000]
-  minmax_sbrs: [0.1, 10.0]
-  peak_factor : 0.03
-  start_bin: 3
-  end_bin: 3
+  minmax_counts:
+  - 1000
+  - 1000
+  minmax_sbrs:
+  - 0.1
+  - 10.0
+  num_samples: 4661
+  peak_factor: 0.05
+  sigma: 30
+epochs: 100
 
+init_lr: 0.0009145173790926249
+k: 4
+loss_id: mae
+lr_decay_gamma: 0.31228240706108457
+n_tbins: 1024
+peak_factor: 0.05
+recon: zncc
+sigma: 30
+tv_reg: 0.09723338742824626
 
-model_params:
-  learn_illum: true
-  learn_coding_mat : false
-
+model_paras:
+  init_coding_mat: null
   init_illum: null
-  init_coding_mat: TruncatedFourier
+  learn_coding_mat: true
+  learn_illum: true

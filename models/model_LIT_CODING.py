@@ -40,6 +40,8 @@ class ZNCCCodingModel(nn.Module):
             else:
                 init.kaiming_uniform_(self.cmat1D.weight)
 
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         def softargmax(self, input, dim=-2, beta=100):
             softmaxed = nn.functional.softmax(beta * input, dim=dim)
             indices = torch.arange(self.n_tbins, device=input.device, dtype=torch.float32).view(-1, self.n_tbins, 1)
@@ -47,11 +49,26 @@ class ZNCCCodingModel(nn.Module):
             return result
 
 
-        def forward(self, input_hist):
+        def forward(self, input_hist, irf=None, account_illum=False):
             output = self.cmat1D(input_hist)
 
             input_norm_t = self.zero_norm_t(output, dim=-2)
-            corr_norm_t = self.zero_norm_t(self.cmat1D.weight, dim=0)
+            if irf is not None:
+                # corr_weights = self.cmat1D.weight
+                # corr_weights_irf = torch.stack([irf_function(corr_weights[i].view(1, self.n_tbins))
+                #                                 for i in range(corr_weights.shape[0])]).view(self.k, self.n_tbins, -1)
+                # corr_norm_t = self.zero_norm_t(corr_weights_irf, dim=0)
+                if account_illum is not False:
+                    irf_fft = torch.fft.fft(irf.to(self.device), dim=0).view(self.n_tbins, 1)
+                else:
+                    irf_fft = torch.fft.fft(torch.tensor(np.roll(irf, -np.argmax(irf))).to(self.device), dim=0).view(self.n_tbins, 1)
+                corr_weights = self.cmat1D.weight
+                corr_weights_fft = torch.fft.fft(torch.transpose(corr_weights.squeeze(-1), 1, 0), dim=0)
+                multiplier = corr_weights_fft * torch.conj(irf_fft)
+                corrfs = torch.transpose(torch.fft.ifft(multiplier, dim=0).real, 1, 0).unsqueeze(-1)
+                corr_norm_t = self.zero_norm_t(corrfs, dim=0).float()
+            else:
+                corr_norm_t = self.zero_norm_t(self.cmat1D.weight, dim=0)
 
             zncc = torch.matmul(torch.transpose(input_norm_t, -2, -1), corr_norm_t.squeeze())
             zncc = torch.transpose(zncc, -2, -1)
@@ -60,7 +77,6 @@ class ZNCCCodingModel(nn.Module):
 
             #print(f"Output grad_fn: {pred_depths.grad_fn}")
             return zncc, pred_depths
-        
 
 class NCCCodingModel(nn.Module):
         def __init__(self, k=3, n_tbins=1024, beta=100, init_coding_mat=None, learn_coding_mat=True):
@@ -171,7 +187,9 @@ class IFFTCodingModel(nn.Module):
 
 class IlluminationModel(nn.Module):
 
-    def __init__(self, coding_model, n_tbins=1024, sigma=10, irf_filename=None, init_illum=None, learn_illum=True):
+    def __init__(self, coding_model, n_tbins=1024, sigma=10, irf_filename=None, 
+                 account_irf=False, account_illum=False,
+                 init_illum=None, learn_illum=True):
         super(IlluminationModel, self).__init__()
 
         self.n_tbins = n_tbins
@@ -193,11 +211,14 @@ class IlluminationModel(nn.Module):
         self.coding_model = coding_model
 
         if irf_filename is not None:
-            pulse = get_irf(irf_filename, n_tbins)
+            self.irf = get_irf(irf_filename, n_tbins)
         else:
             pulse_domain = np.arange(0, self.n_tbins)
-            pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
-        self.irf_layer = IRF1DLayer(irf=pulse)
+            self.irf = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+        self.irf_layer = IRF1DLayer(irf=self.irf)
+
+        self.account_irf = account_irf
+        self.account_illum = account_illum
 
     def forward(self, bins, photon_counts, sbrs):
 
@@ -218,12 +239,20 @@ class IlluminationModel(nn.Module):
         noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
         noisy_parameter = scaled_tensors + noise
 
-        return self.coding_model(noisy_parameter)
+        account_for_illum = None
+        if self.account_irf:
+            account_for_illum = self.irf
+        elif self.account_illum:
+            account_for_illum = self.irf_layer(torch.relu(self.learnable_input).view(1, self.n_tbins)).view(self.n_tbins, 1)
+
+        return self.coding_model(noisy_parameter, account_for_illum, self.account_illum)
 
 
 class IlluminationPeakModel(nn.Module):
 
-    def __init__(self, coding_model, n_tbins=1024, beta_max=100, peak_factor=5, sigma=10, clamp_peak=True, init_illum=None, learn_illum=True):
+    def __init__(self, coding_model, n_tbins=1024, beta_max=100, peak_factor=5, sigma=10, clamp_peak=True, 
+                 irf_filename=None, account_irf=False, account_illum=False,
+                 init_illum=None, learn_illum=True):
         super(IlluminationPeakModel, self).__init__()
 
         self.n_tbins = n_tbins
@@ -243,13 +272,21 @@ class IlluminationPeakModel(nn.Module):
             self.learnable_input.data.fill_(1.0) 
 
         self.coding_model = coding_model
-        pulse_domain = np.arange(0, self.n_tbins)
-        pulse = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
-        self.irf_layer = IRF1DLayer(irf=pulse)
+        
+        if irf_filename is not None:
+            self.irf = get_irf(irf_filename, n_tbins)
+        else:
+            pulse_domain = np.arange(0, self.n_tbins)
+            self.irf = gaussian_pulse(pulse_domain, mu=pulse_domain[-1] // 2, width=sigma, circ_shifted=True)
+        self.irf_layer = IRF1DLayer(irf=self.irf)
 
         self.beta_max = beta_max
         self.peak_factor = peak_factor
         self.clamp_peak = clamp_peak
+
+        self.account_irf = account_irf
+        self.account_illum = account_illum
+        
 
     def smooth_max(self, x, beta=10, dim=0, keepdim=True):
         weights = torch.exp(beta * x)
@@ -308,7 +345,13 @@ class IlluminationPeakModel(nn.Module):
         noise = torch.normal(mean=0, std=torch.sqrt(shifted_tensors)).to(shifted_tensors.device)
         noisy_parameter = shifted_tensors + noise
         
-        return self.coding_model(noisy_parameter)
+        account_for_illum = None
+        if self.account_irf:
+            account_for_illum = self.irf
+        elif self.account_illum:
+            account_for_illum = self.irf_layer(torch.relu(self.learnable_input).view(1, self.n_tbins)).view(self.n_tbins, 1)
+
+        return self.coding_model(noisy_parameter, account_for_illum, self.account_illum)
 
 class LITIlluminationModel(LITIlluminationBaseModel):
     def __init__(self, k=4, n_tbins=1024,
@@ -319,6 +362,8 @@ class LITIlluminationModel(LITIlluminationBaseModel):
                     tv_reg=0.1,
                     sigma=10,
                     irf_filename=None,
+                    account_irf=False,
+                    account_illum=False,
                     recon='zncc',
                     init_coding_mat=None,
                     learn_coding_mat=True,
@@ -338,6 +383,8 @@ class LITIlluminationModel(LITIlluminationBaseModel):
                                        n_tbins=n_tbins, 
                                        sigma=sigma,
                                        irf_filename=irf_filename,
+                                       account_irf=account_irf,
+                                       account_illum=account_illum,
                                        init_illum=init_illum, 
                                        learn_illum=learn_illum)
 
@@ -358,6 +405,9 @@ class LITIlluminationPeakModel(LITIlluminationBaseModel):
                     beta_max=100,
                     tv_reg=0.1,
                     sigma=10,
+                    irf_filename=None,
+                    account_irf=False,
+                    account_illum=False,
                     recon='zncc',
                     peak_factor = 5,
                     peak_reg = 0, 
@@ -384,6 +434,9 @@ class LITIlluminationPeakModel(LITIlluminationBaseModel):
                                            beta_max=beta_max, 
                                            peak_factor=peak_factor, 
                                            clamp_peak=self.clamp_peak,
+                                           irf_filename=irf_filename,
+                                           account_irf=account_irf,
+                                           account_illum=account_illum,
                                            init_illum=init_illum, 
                                            learn_illum=learn_illum)
 

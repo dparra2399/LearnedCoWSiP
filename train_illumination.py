@@ -31,6 +31,8 @@ if __name__ == '__main__':
         sigma = dataset_params['sigma']
         irf_filename = dataset_params['irf_filename']
         num_samples = dataset_params['num_samples']
+        account_irf = dataset_params['account_irf']
+        account_illum = dataset_params['account_illum']
 
         minmax_counts = dataset_params['minmax_counts']
         minmax_sbrs = dataset_params['minmax_sbrs']
@@ -55,7 +57,7 @@ if __name__ == '__main__':
         print(e)
         exit(0)
 
-    logger = CSVLogger(log_dir, name="illum_models")
+    logger = TensorBoardLogger(log_dir, name="illum_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",  
@@ -86,6 +88,7 @@ if __name__ == '__main__':
 
     lit_model = LITIlluminationModel(k=k, n_tbins=n_tbins, loss_id=loss_id, init_lr=init_lr, lr_decay_gamma=lr_decay_gamma,
                                beta=beta, tv_reg=tv_reg, sigma=sigma, irf_filename=irf_filename,
+                               account_irf=account_irf, account_illum=account_illum,
                                recon=recon,init_coding_mat=init_coding_mat,learn_coding_mat=learn_coding_mat,
                                init_illum=init_illum,learn_illum=learn_illum)
 
