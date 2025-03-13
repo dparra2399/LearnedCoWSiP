@@ -10,7 +10,7 @@ epochs: 50
 recon: zncc
 
 dataset:
-  sigma: 30
+  sigma: 10
   irf_filename: null
   account_irf: false
   account_illum: false

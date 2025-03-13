@@ -6,15 +6,16 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import yaml
-
-
-yaml_file = 'config/peak_configs/test_params_nt1024_k8.yaml'
-log_dir = 'experiments'
+import argparse
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Data directories")
+    parser.add_argument("yaml_file", type=str, help="Config file path")
+    parser.add_argument("--log_dir", type=str, help="Output model directory", default='experiments') 
+    args = parser.parse_args()
 
     try:
-        with open(yaml_file, 'r') as file:
+        with open(args.yaml_file, 'r') as file:
             config = yaml.safe_load(file)
 
         init_lr = config['init_lr']
@@ -62,10 +63,10 @@ if __name__ == '__main__':
         exit(0)
 
 
-    logger = TensorBoardLogger(log_dir, name="illum_peak_models")
+    logger = TensorBoardLogger(args.log_dir, name="illum_peak_models")
 
     checkpoint_callback = ModelCheckpoint(
-        dirpath=f"{log_dir}/{logger.name}/version_{logger.version}/checkpoints",
+        dirpath=f"{args.log_dir}/{logger.name}/version_{logger.version}/checkpoints",
         filename ='coded_model',
         save_top_k=1,  # Save only the best model
         monitor="val_loss",  # Metric to monitor
