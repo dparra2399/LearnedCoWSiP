@@ -32,10 +32,14 @@ class IlluminationLayer(nn.Module):
             #self.cmat_init = self.cmat_init - np.mean(self.cmat_init, axis=0)
             self.cmat_init = np.transpose(circular_corr(self.irf.reshape(self.n_tbins, 1), np.transpose(self.cmat_init), axis=0))
         else:
-            cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=pulse)
+            cmat_init = get_coding_scheme(coding_id=init, n_tbins=self.n_tbins, k=self.k, h_irf=self.irf)
             ill = Gaussian1DLayer(gauss_len=self.n_tbins)
             self.illumination = ill(torch.tensor([0])).detach().cpu().view(self.n_tbins, 1)
             self.cmat_init = cmat_init.transpose()
+            if init=='Greys':
+                self.cmat_init = np.transpose(circular_corr(self.irf.reshape(self.n_tbins, 1), np.transpose(self.cmat_init), axis=0))
+
+
 
         self.cmat1D = torch.nn.Conv1d(in_channels=self.n_tbins
                                       , out_channels=self.k

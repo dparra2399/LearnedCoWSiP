@@ -15,12 +15,12 @@ dataset:
   sigma: 10
   num_samples: 15000
   irf_filename: null
-  account_irf: true
+  account_irf: false
   account_illum: false
   grid_size: 10
   minmax_counts : [1000, 1000]
   minmax_sbrs: [0.1, 10.0]
-  peak_factor : 0.03
+  peak_factor : 0.015
   start_bin: 3
   end_bin: 3
 
