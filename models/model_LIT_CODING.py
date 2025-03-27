@@ -219,6 +219,7 @@ class IlluminationModel(nn.Module):
 
         self.account_irf = account_irf
         self.account_illum = account_illum
+        self.learn_illum = learn_illum
 
     def forward(self, bins, photon_counts, sbrs):
 
@@ -236,8 +237,11 @@ class IlluminationModel(nn.Module):
 
         scaled_tensors = shifted_tensors * scaling_factors.view(-1, 1, 1) + amb_per_bin.view(-1, 1, 1)  # (batch_size, n_tbins, 1)
 
-        noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
-        noisy_parameter = scaled_tensors + noise
+        if self.learn_illum:
+            noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
+            noisy_parameter = scaled_tensors + noise
+        else:
+            noisy_parameter = torch.poisson(scaled_tensors)
 
         account_for_illum = None
         if self.account_irf:
@@ -342,8 +346,12 @@ class IlluminationPeakModel(nn.Module):
         shifted_tensors = torch.stack([torch.roll(self.irf_layer(offset_tensors[i].view(1, self.n_tbins)).view(self.n_tbins, 1) 
                                                   , shifts=int(shift), dims=0) for i, shift in enumerate(shifts)], dim=0)  # (batch_size, n_tbins, 1)
         
-        noise = torch.normal(mean=0, std=torch.sqrt(shifted_tensors)).to(shifted_tensors.device)
-        noisy_parameter = shifted_tensors + noise
+
+        if self.learn_illum:
+            noise = torch.normal(mean=0, std=torch.sqrt(scaled_tensors)).to(scaled_tensors.device)
+            noisy_parameter = scaled_tensors + noise
+        else:
+            noisy_parameter = torch.poisson(scaled_tensors)
         
         account_for_illum = None
         if self.account_irf:

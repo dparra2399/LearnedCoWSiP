@@ -1,0 +1,36 @@
+account_illum: false
+account_irf: true
+beta: 8
+beta_max: 8
+dataset:
+  account_illum: false
+  account_irf: true
+  end_bin: 3
+  grid_size: 10
+  irf_filename: null
+  minmax_counts:
+  - 1000
+  - 1000
+  minmax_sbrs:
+  - 0.1
+  - 10.0
+  num_samples: 15000
+  peak_factor: 0.015
+  sigma: 5
+  start_bin: 3
+epochs: 50
+init_coding_mat: null
+init_illum: null
+init_lr: 0.0018
+irf_filename: null
+k: 8
+learn_coding_mat: true
+learn_illum: true
+loss_id: mae
+lr_decay_gamma: 0.37425082035224766
+n_tbins: 1024
+peak_factor: 0.015
+peak_reg: 0
+recon: zncc
+sigma: 5
+tv_reg: 0.0017925542621817477
