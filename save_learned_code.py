@@ -3,7 +3,8 @@ from models.CM1DLayers import IlluminationLayer
 import os
 import yaml
 
-init = 'version_4'
+init = 'n1024_k8_sigma10_photonstarved'
+#init = 'version_4'
 path = os.path.join('experiments\\illum_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')
@@ -21,10 +22,11 @@ cmat = np.transpose(np.squeeze(coding_mat.cmat1D.weight.data.detach().clone().nu
 illum = np.transpose(coding_mat.illumination.data.detach().numpy())
 
 foldername = f'n{n_tbins}_k{k}_{loss_id}'
+foldername = init
 print(cmat.shape)
 print(illum.shape)
 
-os.makedirs(os.path.join(folder, 'bandlimited_models', foldername), exist_ok=True)
+os.makedirs(os.path.join(folder, 'bandlimited_models', foldername))
 
 np.save(os.path.join(folder, 'bandlimited_models', foldername, 'coded_model'), cmat)
 np.save(os.path.join(folder, 'bandlimited_models', foldername, 'illum_model'), illum)
