@@ -19,12 +19,12 @@ dataset:
 epochs: 50
 init_coding_mat: null
 init_illum: true
-init_lr: 0.013555721642207629
+init_lr: 0.0013555721642207628
 irf_filename: irf/irf_tres-8ps_tlen-17504ps.npy
 k: 8
 learn_coding_mat: true
 learn_illum: false
-loss_id: mae
+loss_id: rmse
 lr_decay_gamma: 0.31228240706108457
 model_params:
   init_coding_mat: null
