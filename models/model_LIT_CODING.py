@@ -9,6 +9,7 @@ from models.IRF_layers import IRF1DLayer
 from felipe_utils.research_utils.signalproc_ops import gaussian_pulse
 import torch.nn.init as init
 import torch.nn.utils as utils
+import matplotlib.pyplot as plt
 from utils.tirf_utils import get_coding_scheme, get_irf
 breakpoint = debugger.set_trace
 
@@ -267,8 +268,12 @@ class IlluminationPeakModel(nn.Module):
         self.learnable_input.requires_grad = learn_illum
 
         if init_illum is not None:
-            self.learnable_input.data.fill_(0)
-            self.learnable_input.data[0] = 1.0
+            data = np.transpose(np.load(init_illum))
+            tensor_data = torch.tensor(data, dtype=torch.float32)
+            with torch.no_grad():
+                self.learnable_input.copy_(tensor_data)
+            #self.learnable_input.data.fill_(0)
+            #self.learnable_input.data[0] = 1.0
         else:
             self.learnable_input.data.fill_(1.0) 
 

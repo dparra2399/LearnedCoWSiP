@@ -4,13 +4,13 @@ from pytorch_lightning.loggers import CSVLogger
 from dataset.dataset_utils import SimulatedLabelModule
 import torch
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import TensorBoardLogger
+# from pytorch_lightning.loggers import TensorBoardLogger
 import yaml
 import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Data directories")
-    parser.add_argument("yaml_file", type=str, help="Config file path")
+    parser.add_argument("--yaml_file", type=str, help="Config file path", default='config/peak_configs/tester.yaml')
     parser.add_argument("--log_dir", type=str, help="Output model directory", default='experiments') 
     args = parser.parse_args()
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         exit(0)
 
 
-    logger = TensorBoardLogger(args.log_dir, name="illum_peak_models")
+    logger = CSVLogger(args.log_dir, name="illum_peak_models")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=f"{args.log_dir}/{logger.name}/version_{logger.version}/checkpoints",

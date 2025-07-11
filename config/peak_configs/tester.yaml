@@ -13,7 +13,7 @@ beta_max: 8
 
 dataset:
   sigma: 10
-  num_samples: 15000
+  num_samples: 2
   irf_filename: null
   account_irf: false
   account_illum: false
@@ -26,8 +26,8 @@ dataset:
 
 
 model_params:
-  learn_illum: true
+  learn_illum: false
   learn_coding_mat : true
 
-  init_illum: null
+  init_illum: learned_codes/bandlimited_peak_models/n1024_k8_sigma10_peak015_counts1000/illum_model.npy
   init_coding_mat: null

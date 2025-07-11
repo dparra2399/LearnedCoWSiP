@@ -3,12 +3,14 @@ from models.CM1DLayers import IlluminationLayer
 import os
 import yaml
 
-init = 'n1024_k8_sigma1_peak030_counts1000'
-path = os.path.join('experiments\\illum_peak_models', init)
+init = 'n1024_k12_sigma10_peak030_counts1000'
+#init = 'n1024_k10_sigma10_peak005_counts1000'
+#init = 'version_0'
+path = os.path.join('experiments/illum_peak_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')
 filename = init.split('/')[-1].split('.')[0]
-folder = 'C:\\Users\\Patron\\PycharmProjects\\Indirect-Direct-ToF\\learned_codes'
+folder = '/Users/Patron/PycharmProjects/Indirect-Direct-ToF/learned_codes'
 with open(os.path.join(path, 'hparams.yaml'), 'r') as f:
     hparams = yaml.load(f, Loader=yaml.FullLoader)
     n_tbins = hparams['n_tbins']

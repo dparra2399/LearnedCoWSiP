@@ -4,12 +4,12 @@ import os
 import yaml
 
 init = 'n1024_k8_sigma10_photonstarved'
-init = 'version_6'
-path = os.path.join('experiments\\illum_models', init)
+init = 'version0'
+path = os.path.join('experiments/illum_models', init)
 
 ckpt_path = os.path.join(path, 'checkpoints', 'coded_model.ckpt')
 filename = init.split('/')[-1].split('.')[0]
-folder = 'C:\\Users\\clwalker4\\PycharmProjects\\Indirect-Direct-ToF\\learned_codes'
+folder = '/Users/Patron/PycharmProjects/Indirect-Direct-ToF/learned_codes'
 with open(os.path.join(path, 'hparams.yaml'), 'r') as f:
     hparams = yaml.load(f, Loader=yaml.FullLoader)
     n_tbins = hparams['n_tbins']
